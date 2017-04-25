@@ -11,6 +11,7 @@
 
 #define KEYBITS 4096
 // http://stackoverflow.com/questions/3585846/color-text-in-terminal-applications-in-unix
+#define CYAN "\x1B[36m"
 #define GREEN "\x1B[32m"
 #define RED "\x1B[31m"
 #define RESET "\x1B[0m"
@@ -60,6 +61,8 @@ int main (void)
   // Welcome messages
   printf("Welcome to the secure messanger client.\n");
   printf("When you message someone else, your message will be sent securely over a server relay.\n");
+  printf(CYAN "Messages you have sent are displayed in cyan.\n" RESET);
+  printf(GREEN "Messages you receive are displayed in green.\n" RESET);
   printf("Type :help for help.\n\n");
   
 
@@ -93,6 +96,8 @@ int main (void)
         ERR_load_crypto_strings();
         ERR_error_string(ERR_get_error(), err);
         fprintf(stderr,RED "Error encrypting message: %s\n" RESET, err);
+      } else {
+        printf(CYAN "%s\n" RESET, message);
       }
 
 
