@@ -26,14 +26,24 @@ int main (void)
 
     private = BIO_new(BIO_s_mem());
     public = BIO_new(BIO_s_mem());
+
+    PEM_write_bio_RSAPrivateKey(private, keypair, NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_RSAPublicKey(public, keypair);
+
+    size_t pri_len = BIO_pending(private);
+    size_t pub_len = BIO_pending(public);
+
+    char *pri_key = malloc(pri_len + 1);
+    char *pub_key = malloc(pub_len + 1);
+
+    BIO_read(private, pri_key, pri_len);
+    BIO_read(public, pub_key, pub_len);
+
+    pri_key[pri_len] = '\0';
+    pub_key[pub_len] = '\0';
     
     keypair = RSA_generate_key(KEYBITS, 3, NULL, NULL);
-    if (keypair == NULL) {
-      printf("Failed to generate RSA keypair. Aborting...");
-      return 1;
-    }
-    file = fopen("Keys.txt","w");
-    fclose(file);
+
   }
   
   
