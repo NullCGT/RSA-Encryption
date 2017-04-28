@@ -10,6 +10,8 @@
 // This code is copied from https://shanetully.com/2012/04/simple-public-key-encryption-with-rsa-and-opensll/
 
 #define KEYBITS 4096
+#define PUBFILENAME "PUBKEY.pem"
+#define PRIVFILENAME "PRIVKEY.pem"
 // http://stackoverflow.com/questions/3585846/color-text-in-terminal-applications-in-unix
 #define CYAN "\x1B[36m"
 #define GREEN "\x1B[32m"
@@ -25,12 +27,22 @@ int main (void)
   BIO *public;
   char* pri_key;
   char* pub_key;
+  RSA **pubkey;
+  RSA **privkey;
 
   OpenSSL_add_all_algorithms();
   system("clear");
   // http://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
-  if (access("Keys.txt", F_OK) != -1) {
+  if (access(PUBFILENAME, F_OK) != -1 && access(PRIVFILENAME, F_OK) != -1) {
     printf("Found keypair file!\n");
+    
+    file = fopen(PUBFILENAME, "w");
+    PEM_read_RSA_PUBKEY(file,pubkey,NULL,NULL);
+    fclose(file);
+    file = fopen(PRIVFILENAME,"w");
+    PEM_read_RSAPrivateKey(file,privkey,NULL,NULL);
+    fclose(file);
+    
   } else {
     printf("Did not find keypair file. Generating new keypair...\n");
     keypair = RSA_generate_key(KEYBITS, 3, NULL, NULL);
@@ -53,8 +65,11 @@ int main (void)
     pub_key[pub_len] = '\0';
     
 
-    file = fopen("PUBKEY.txt", "w");
+    file = fopen(PUBFILENAME, "w");
     PEM_write_RSA_PUBKEY(file, keypair);
+    fclose(file);
+    file = fopen(PRIVFILENAME,"w");
+    PEM_write_RSAPrivateKey(file,keypair,NULL,NULL,0,NULL,NULL);
     fclose(file);
   }
 
