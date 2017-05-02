@@ -4,12 +4,11 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h> 
 #include <unistd.h>
-
-
-#define port_number 57776
-#define recieve_number 57777
+    
+#define sender_port_number 57777
+#define reciever_port_number 57777
 
 
 void error(char *msg)
@@ -58,7 +57,7 @@ int main(int argc, char *argv[])
    bcopy((char *)server->h_addr,
         (char *)&server_address.sin_addr.s_addr, //this is just a long
         server->h_length);
-   server_address.sin_port = htons(port_number);
+   server_address.sin_port = htons(sender_port_number);
 
    if (connect(socket_file_descriptor,
        (struct sockaddr *)&server_address,
@@ -87,7 +86,7 @@ int main(int argc, char *argv[])
 
    server_address.sin_family = AF_INET;
    server_address.sin_addr.s_addr = INADDR_ANY;
-   server_address.sin_port = htons(recieve_number);
+   server_address.sin_port = htons(reciever_port_number);
 
    if (bind(socket_file_descriptor, (struct sockaddr *) &server_address,
             sizeof(server_address)) < 0)
