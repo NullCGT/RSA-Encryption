@@ -8,7 +8,7 @@
 #include <unistd.h>
     
 #define sender_port_number 57777
-#define reciever_port_number 57777
+#define reciever_port_number 57776
 
 
 void error(char *msg)
