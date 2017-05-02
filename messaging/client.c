@@ -15,6 +15,7 @@ void error(char *msg)
 
 int main(int argc, char *argv[])
 {
+
     int socket_file_descriptor, port_number, n;
     struct sockaddr_in server_address;
     struct hostent *server;
