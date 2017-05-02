@@ -30,6 +30,43 @@ typedef struct node_t {
   struct node_t* next;
 } node;
 
+RSA * seperate_pub_key(RSA *keypair){
+  BIO*public = BIO_new(BIO_s_mem());
+  PEM_write_bio_RSAPublicKey(public, keypair);
+  RSA*keypair_pub = NULL;
+  PEM_read_bio_RSAPublicKey(public, &keypair_pub, NULL,NULL);
+  return keypair_pub;
+}
+
+char *encryption(RSA* keypair_pub, char* message){
+  char *encrypted_message = malloc(RSA_size(keypair_pub));
+  int encrypt_len;
+  char *err = malloc(130);
+
+  if((encrypt_len = RSA_public_encrypt(strlen(message)+1, (unsigned char*) message,
+                                       (unsigned char*)encrypted_message, keypair_pub, RSA_PKCS1_OAEP_PADDING)) == -1) {
+    ERR_load_crypto_strings();
+    ERR_error_string(ERR_get_error(), err);
+    fprintf(stderr,RED "Error encrypting message: %s\n" RESET, err);
+  } else {
+    printf(CYAN "%s\n" RESET, message);
+  }
+  return encrypted_message;
+}
+
+char *decryption(RSA* keypair, char* encrypted_message,int encrypt_len){
+  char *decrypted_message = malloc(RSA_size(keypair));
+  char *err = malloc(130);
+  if(RSA_private_decrypt(encrypt_len, (unsigned char*)encrypted_message, (unsigned char*)decrypted_message,
+                         keypair, RSA_PKCS1_OAEP_PADDING) == -1) {
+    ERR_load_crypto_strings();
+    ERR_error_string(ERR_get_error(),err);
+    fprintf(stderr,RED "Error decrypting message: %s\n" RESET, err);
+  } else {
+    printf(GREEN "Decrypted message: %s\n" RESET, decrypted_message);
+  }
+  return decrypted_message;
+}
 
 int main (void)
 {
@@ -75,19 +112,7 @@ int main (void)
     pri_key[pri_len] = '\0';
     pub_key[pub_len] = '\0';
     
-
-    file = fopen(PUBFILENAME, "w");
-    PEM_write_RSA_PUBKEY(file, keypair);
-    fclose(file);
-    file = fopen(PRIVFILENAME,"w");
-    PEM_write_RSAPrivateKey(file,keypair,NULL,NULL,0,NULL,NULL);
-    fclose(file);
-
-
-
     
- 
-
   // Welcome messages
   printf("Welcome to the secure messanger client.\n");
   printf("When you message someone else, your message will be sent securely over a server relay.\n");
@@ -117,7 +142,7 @@ int main (void)
     }
     else {
 
-      char *encrypted_message = malloc(RSA_size(keypair));
+      char *encrypted_message = malloc(RSA_size(keypair_pub));
       int encrypt_len;
       char *err = malloc(130);
 
