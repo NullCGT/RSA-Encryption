@@ -27,28 +27,28 @@ typedef struct ip_key_t  {
 } ip_key;
 
 typedef struct node_t {
-  ip_key* compdata;
+  ip_key compdata;
   struct node_t* next;
 } node;
 
 typedef struct hashmap_element{
   int size;
-  ip_key** data;
+  ip_key* data;
 }hash;
 
 
-bool in_hashmap(char*ip,hash* hashmap_server){
+bool in_hashmap(char*ip,hash hashmap_server){
   for(int i=0;i<NUM_SERVER;i++){
-    if (strcmp(ip, hashmap_server->data[i]->ip_address) == 0){
+    if (strcmp(ip, hashmap_server.data[i].ip_address) == 0){
       return true;
     }
   }
     return false;
 }
 
-bool in_list(char*ip,node* ip_server){
+bool in_list(char*ip,node ip_server){
   while(ip_server!=NULL){
-    if (strcmp(ip, ip_server->compdata->ip_address) == 0){
+    if (strcmp(ip, ip_server.compdata.ip_address) == 0){
       return true;
     }
     return false;
