@@ -7,7 +7,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdbool.h>
-// This MUST be compiled using gcc -o Testencrypt Testencrypt.c -lssl -lcrypto
+// This MUST be compiled using gcc -o Testing Testing.c -lssl -lcrypto -std=c11
 
 // This code is copied from https://shanetully.com/2012/04/simple-public-key-encryption-with-rsa-and-opensll/
 
@@ -42,7 +42,7 @@ typedef struct tosend_t {
   char message; 
 } tosend;
 
-
+/*
 bool in_hashmap(char*ip,hash hashmap_server){
   for(int i=0;i<NUM_SERVER;i++){
     if (strcmp(ip, hashmap_server.data[i].ip_address) == 0){
@@ -62,7 +62,7 @@ RSA* pub_in_list(char*ip,node ip_server){
   }
   return;
 }  
-  
+  */
 RSA * seperate_pub_key(RSA *keypair){
   BIO*public = BIO_new(BIO_s_mem());
   PEM_write_bio_RSAPublicKey(public, keypair);
@@ -101,6 +101,28 @@ char *decryption(RSA* keypair, char* encrypted_message,int encrypt_len){
   return decrypted_message;
 }
 
+bool struct_decryption(RSA* keypair, tosend package,int encrypt_len){
+char *decrypted_message = malloc(RSA_size(keypair));
+char *err = malloc(130);
+for (int i = package.index; i < 3; i++) {
+	if(RSA_private_decrypt(encrypt_len, (unsigned char*)package.ip[i], (unsigned char*)package.ip[i],
+	keypair, RSA_PKCS1_OAEP_PADDING) == -1) {
+		ERR_load_crypto_strings();
+		ERR_error_string(ERR_get_error(),err);
+		fprintf(stderr,RED "Error decrypting message: %s\n" RESET, err);
+	} else {
+		printf(GREEN "Decrypted message: %s\n" RESET, decrypted_message);
+	}
+}
+return (package.index == 3);
+}
+
+char* get_struct_ip(tosend package) {
+	int find = package.index;
+	char* ret = package.ip[find];
+	return ret;
+}
+
 int main (void)
 {
 
@@ -113,22 +135,22 @@ int main (void)
   char*ip0;
   char*ip1;
   char*ip2;
+  /*
   RSA* pub0=pub_in_list(ip0,ip_server);
   RSA* pub1=pub_in_list(ip1,ip_server);
   RSA* pub2=pub_in_list(ip2,ip_server);
   RSA* pub[3];
+  */
+  RSA* pub[3];
   pub[0]=pub0;
   pub[1]=pub1;
   pub[2]=pub2;
-  char encrypted[1]='t';
   char *message;
-
   tosend package;
-  package.int = 0;
+  package.index = 0;
   package.ip[0] = ip0;
   package.ip[1] = ip1;
   package.ip[2] = ip2;
-  package.message = "I AM A MESSAGE LOL";
   
   encryption(pub[2], package.ip[2]);
   for (int i = 0; i < 1; i++) {
@@ -140,11 +162,12 @@ int main (void)
 
   
   // intialized as original message
+  /*
   for (int i=0;i<3;i++){
     strcat(message,encrypted);
     encrypted=encryption(pub[2-i], encrypted);
     }
-
+*/
   //Testing
   RSA *keypair_pub;
 
