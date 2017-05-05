@@ -11,7 +11,7 @@
 
 // This code is copied from https://shanetully.com/2012/04/simple-public-key-encryption-with-rsa-and-opensll/
 
-#define KEYBITS 4096
+#define KEYBITS 2048
 #define PUBFILENAME "PUBKEY.pem"
 #define PRIVFILENAME "PRIVKEY.pem"
 // http://stackoverflow.com/questions/3585846/color-text-in-terminal-applications-in-unix
@@ -36,6 +36,12 @@ typedef struct hashmap_element{
   ip_key* data;
 }hash;
 
+typedef struct tosend_t {
+  int index;
+  char* ip[4];
+  char message; 
+} tosend;
+
 
 bool in_hashmap(char*ip,hash hashmap_server){
   for(int i=0;i<NUM_SERVER;i++){
@@ -46,12 +52,15 @@ bool in_hashmap(char*ip,hash hashmap_server){
     return false;
 }
 
-bool in_list(char*ip,node ip_server){
+RSA* pub_in_list(char*ip,node ip_server){
   while(ip_server!=NULL){
     if (strcmp(ip, ip_server.compdata.ip_address) == 0){
-      return true;
+      return ip_server.compdata.keypair_pub;
+    }else{
+      ip_server=ip_server->next;
     }
-    return false;
+  }
+  return;
 }  
   
 RSA * seperate_pub_key(RSA *keypair){
@@ -101,6 +110,40 @@ int main (void)
   BIO *public;
   char* pri_key;
   char* pub_key;
+  char*ip0;
+  char*ip1;
+  char*ip2;
+  RSA* pub0=pub_in_list(ip0,ip_server);
+  RSA* pub1=pub_in_list(ip1,ip_server);
+  RSA* pub2=pub_in_list(ip2,ip_server);
+  RSA* pub[3];
+  pub[0]=pub0;
+  pub[1]=pub1;
+  pub[2]=pub2;
+  char encrypted[1]='t';
+  char *message;
+
+  tosend package;
+  package.int = 0;
+  package.ip[0] = ip0;
+  package.ip[1] = ip1;
+  package.ip[2] = ip2;
+  package.message = "I AM A MESSAGE LOL";
+  
+  encryption(pub[2], package.ip[2]);
+  for (int i = 0; i < 1; i++) {
+    encryption(pub[1], package.ip[2-i]); 
+  }
+  for (int i = 0; i < 2; i++) {
+    encryption(pub[0], package.ip[2-i]); 
+  }
+
+  
+  // intialized as original message
+  for (int i=0;i<3;i++){
+    strcat(message,encrypted);
+    encrypted=encryption(pub[2-i], encrypted);
+    }
 
   //Testing
   RSA *keypair_pub;
