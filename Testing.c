@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+#include <stdbool.h>
 // This MUST be compiled using gcc -o Testencrypt Testencrypt.c -lssl -lcrypto
 
 // This code is copied from https://shanetully.com/2012/04/simple-public-key-encryption-with-rsa-and-opensll/
@@ -18,7 +19,7 @@
 #define GREEN "\x1B[32m"
 #define RED "\x1B[31m"
 #define RESET "\x1B[0m"
-
+#define NUM_SERVER
 
 typedef struct ip_key_t  {
   char* ip_address;
@@ -30,6 +31,29 @@ typedef struct node_t {
   struct node_t* next;
 } node;
 
+typedef struct hashmap_element{
+  int size;
+  ip_key* data;
+}hash;
+
+
+bool in_hashmap(char*ip,hash hashmap_server){
+  for(int i=0;i<NUM_SERVER;i++){
+    if (strcmp(ip, hashmap_server.data[i].ip_address) == 0){
+      return true;
+    }
+  }
+    return false;
+}
+
+bool in_list(char*ip,node ip_server){
+  while(ip_server!=NULL){
+    if (strcmp(ip, ip_server.compdata.ip_address) == 0){
+      return true;
+    }
+    return false;
+}  
+  
 RSA * seperate_pub_key(RSA *keypair){
   BIO*public = BIO_new(BIO_s_mem());
   PEM_write_bio_RSAPublicKey(public, keypair);
