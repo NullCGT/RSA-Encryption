@@ -170,8 +170,9 @@ void act_as_server () {
 
 
 int main(int argc, char**argv) {
-
+  printf("in main");
   if (argv[2] != NULL) {
+    printf("in if");
     char* final_ip = argv[1];
     int num_of_middle_servers = (int)argv[2];
     
@@ -182,6 +183,7 @@ int main(int argc, char**argv) {
     package->num_of_middle_servers = num_of_middle_servers;
     encrypt(final_ip, ips, 100);
 
+    printf("after package");
     for (int i = 0; i < num_of_middle_servers; i++) {
       package->ip[i] = ips[i];
     }
