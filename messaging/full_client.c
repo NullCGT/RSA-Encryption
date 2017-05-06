@@ -4,9 +4,9 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <stdlib.h>
-#include <string.h> 
+#include <string.h>
 #include <unistd.h>
-    
+
 #define sender_port_number 57777
 #define reciever_port_number 57776
 

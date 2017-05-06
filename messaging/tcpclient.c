@@ -12,18 +12,15 @@ void * receiveMessage(void * socket) {
  char buffer[BUF_SIZE];
  memset(buffer, 0, BUF_SIZE);
 
- for (;;) {
   ret = recvfrom((int) socket, buffer, BUF_SIZE, 0, NULL, NULL);
   if (ret < 0) printf("Error receiving data!\n");
-  // do the decryption here and store it somewhere;
-  // if the decryption leads to a new IP address in act_as_server break out and act_as_client
   else fputs(buffer, stdout);
- }
 }
 
 
-void act_as_client (char* IP) {
+void act_as_client (struct s) {
 
+   // get IP from struct;
   //creating the socket
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0) {
@@ -63,6 +60,7 @@ void act_as_client (char* IP) {
     if (ret < 0) printf("Error sending data!\n\t-%s", buffer);
   }
 
+  s.index++;
   close(sockfd);
   pthread_exit(NULL);
 
@@ -135,22 +133,19 @@ void act_as_server () {
 
 
 int main(int argc, char**argv) {
-  //all these should be moved to the act_as_server
-  struct sockaddr_in client_address;
-  int ret, len, new_sockfd;
-  char client_IP[CLIENT_IP_LEN];
-  pid_t child_pid;
+  int num_of_middle_servers = argv[1];
 
-
- // fetching the IP adress
- // if no IP as an argument, should be running as a server
- if (argc < 2)  act_as_server();
- else {
-   //client
-   char* IP = argv[1];
-   act_as_client(IP);
-   }
- }
+  //make hashmap
+  // make struct from args
+  for (;;) {
+    //encrypt num_of_middle_servers times
+    // fetching the IP adress
+    // if no IP as an argument, should be running as a server
+    if (s.index < num_of_middle_servers)  {
+      //decrypt
+      act_as_client(struct s);
+    } else act_as_server();
+  }
 
  return 0;
 }
