@@ -14,7 +14,6 @@
 
 #define PORT 4444
 #define BUF_SIZE 2000
-#define CLADDR_LEN 100
 
 typedef struct tosend {
   int index;
@@ -35,12 +34,53 @@ char* decrypt(char* encrypted_IP) {
   return encrypted_IP; 
 }
 
-void* receiveMessage(void * socket) {
+int create_socket() {
+  int sockfd = socket(AF_INET, SOCK_STREAM, 0);  
+  if (sockfd < 0) {  
+    printf("Error creating socket!\n");  
+    exit(1);  
+  }  
+  printf("Socket created...\n");
+
+  return sockfd; 
+}
+
+void bind_me(struct sockaddr_in addr, int sockfd) {
+  int ret = bind(sockfd, (struct sockaddr *) &addr, sizeof(addr));
+  if (ret < 0) {
+    printf("Error binding!\n");
+    exit(1);
+  }
+  printf("Binding done...\n");
+}
+
+void connect_to_server(struct sockaddr_in addr, int sockfd) {
+ int ret = connect(sockfd, (struct sockaddr *) &addr, sizeof(addr));  
+ if (ret < 0) {  
+  printf("Error connecting to the server!\n");  
+  exit(1);  
+ }  
+ printf("Connected to the server...\n");  
+}
+
+int accept_connection(int sockfd, struct sockaddr_in cl_addr) {
+  int size = sizeof(cl_addr); 
+  int newsockfd = accept(sockfd, (struct sockaddr *) &cl_addr, &size); //take in a sockaddr
+  if (newsockfd < 0) {
+    printf("Error accepting connection!\n");
+    exit(1);
+  }
+
+  return newsockfd;
+}
+
+void* receiveMessage(void* socket) {
   int ret;
-  tosend_t* package = (tosend_t*) malloc(sizeof(tosend_t));
-  int my_socket = (int) socket; 
+  tosend_t* package;
+
+  package = (tosend_t*) malloc(sizeof(tosend_t));
     
-  ret = recvfrom(my_socket, package, sizeof(tosend_t), 0, NULL, NULL);
+  ret = recvfrom((int) (intptr_t)socket, package, sizeof(tosend_t), 0, NULL, NULL);
   if (ret < 0) printf("Error receiving the message!\n");
   else {
     if (package->index >= package->num_of_middle_servers) fputs(package->message, stdout);
@@ -55,32 +95,22 @@ void act_as_client(tosend_t* package) {
  pthread_t rThread;
  char* serverAddr;
 
- serverAddr = decrypt(package->ip[package->index]); 
+ serverAddr = decrypt(package->ip[package->index]);
  
- sockfd = socket(AF_INET, SOCK_STREAM, 0);  
- if (sockfd < 0) {  
-  printf("Error creating socket!\n");  
-  exit(1);  
- }  
- printf("Socket created...\n");   
+ sockfd = create_socket(); 
 
  memset(&addr, 0, sizeof(addr));  
  addr.sin_family = AF_INET;  
  addr.sin_addr.s_addr = inet_addr(serverAddr);
  addr.sin_port = PORT;     
 
- ret = connect(sockfd, (struct sockaddr *) &addr, sizeof(addr));  
- if (ret < 0) {  
-  printf("Error connecting to the server!\n");  
-  exit(1);  
- }  
- printf("Connected to the server...\n");  
+ connect_to_server(addr, sockfd); 
 
  memset(buffer, 0, BUF_SIZE);
  printf("Enter your messages one by one and press return key!\n");
 
  //creating a new thread for receiving messages from the server
- ret = pthread_create(&rThread, NULL, receiveMessage, (void *) sockfd);
+ ret = pthread_create(&rThread, NULL, receiveMessage, (void *) (intptr_t)sockfd);
  if (ret) {
   printf("ERROR: Return Code from pthread_create() is %d\n", ret);
   exit(1);
@@ -88,75 +118,57 @@ void act_as_client(tosend_t* package) {
 
  package->index++; 
 
- //middle man should enter this once and go back to being servers 
+ //middle man should enter this once and go back to being a server 
  while (fgets(buffer, BUF_SIZE, stdin) != NULL) {
+   strcpy(package->message, buffer);  
    ret = sendto(sockfd, package, sizeof(tosend_t), 0, (struct sockaddr *) &addr, sizeof(addr));  
-  if (ret < 0) {  
-   printf("Error sending data!\n\t-%s", buffer);  
-  }
+   if (ret < 0) {  
+     printf("Error sending data!\n\t-%s", buffer);  
+   }
  }
 
  close(sockfd);
  pthread_exit(NULL);
  
- return 0;    
+ return;    
 }  
 
 
-void act_as_server() {
+void act_as_server(tosend_t* package) {
 
  struct sockaddr_in addr, cl_addr;
- int sockfd, len, ret, newsockfd;
+ int sockfd, newsockfd, ret;
  char buffer[BUF_SIZE];
  pid_t childpid;
- char clientAddr[CLADDR_LEN];
  pthread_t rThread;
- 
- sockfd = socket(AF_INET, SOCK_STREAM, 0);
- if (sockfd < 0) {
-  printf("Error creating socket!\n");
-  exit(1);
- }
- printf("Socket created...\n");
+
+ sockfd = create_socket(); 
  
  memset(&addr, 0, sizeof(addr));
  addr.sin_family = AF_INET;
  addr.sin_addr.s_addr = INADDR_ANY;
  addr.sin_port = PORT;
  
- ret = bind(sockfd, (struct sockaddr *) &addr, sizeof(addr));
- if (ret < 0) {
-  printf("Error binding!\n");
-  exit(1);
- }
- printf("Binding done...\n");
+ bind_me(addr, sockfd); 
 
  printf("Waiting for a connection...\n");
  listen(sockfd, 5); //start the listening in the socket
 
+ newsockfd = accept_connection(sockfd, cl_addr);
 
- len = sizeof(cl_addr);
- newsockfd = accept(sockfd, (struct sockaddr *) &cl_addr, &len); //take in a sockaddr
- if (newsockfd < 0) {
-  printf("Error accepting connection!\n");
-  exit(1);
- } 
-
- inet_ntop(AF_INET, &(cl_addr.sin_addr), clientAddr, CLADDR_LEN); //converts the address recieved into an ipaddress
- printf("Connection accepted from %s...\n", clientAddr); 
- 
  memset(buffer, 0, BUF_SIZE);
  printf("Enter your messages one by one and press return key!\n");
 
  //creating a new thread for receiving messages from the client
- ret = pthread_create(&rThread, NULL, receiveMessage, (void *) newsockfd);
+ ret = pthread_create(&rThread, NULL, receiveMessage, (void *) (intptr_t)newsockfd);
  if (ret) {
   printf("ERROR: Return Code from pthread_create() is %d\n", ret);
   exit(1);
  }
 
  while (fgets(buffer, BUF_SIZE, stdin) != NULL) {
-  ret = sendto(newsockfd, buffer, BUF_SIZE, 0, (struct sockaddr *) &cl_addr, len);  
+  strcpy(package->message, buffer); 
+  ret = sendto(newsockfd, buffer, BUF_SIZE, 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));  
   if (ret < 0) {  
    printf("Error sending data!\n");  
    exit(1);
@@ -168,27 +180,23 @@ void act_as_server() {
 
  pthread_exit(NULL);
  return;
-
-
 }
-
-/*
-int main() {
- act_as_server();
-}
-
-*/
 
 int main(int argc, char**argv) {
-  if (argc > 3) {
-    char* final_ip = argv[1];
-    int num_of_middle_servers = atoi(argv[2]);
-    
-    char* ips[num_of_middle_servers];
-    tosend_t* package = (tosend_t*) malloc(sizeof(tosend_t));
+  tosend_t* package;
+  
+  package = (tosend_t*) malloc(sizeof(tosend_t));
 
-    package->index = 0;
+  package->index = 0;
+  if (argc > 3) {
+    int num_of_middle_servers;
+    char* final_ip;
+    char* ips[num_of_middle_servers];
+    
+    strcpy(final_ip, argv[1]);
+    num_of_middle_servers = atoi(argv[2]);
     package->num_of_middle_servers = num_of_middle_servers;
+    
     encrypt(final_ip, ips, 100);
 
     for (int i = 0; i < num_of_middle_servers; i++) {
@@ -196,7 +204,7 @@ int main(int argc, char**argv) {
     }
     
     act_as_client(package); 
-  } else act_as_server();
+  } else act_as_server(package);
 
  return 0;
 }
