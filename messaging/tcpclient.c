@@ -84,7 +84,7 @@ void* receiveMessage(void* socket) {
   if (ret < 0) printf("Error receiving the message!\n");
   else {
     if (package->index >= package->num_of_middle_servers) fputs(package->message, stdout);
-    else act_as_client(package);
+    else act_as_server(package);
   }
 }
 
@@ -166,7 +166,7 @@ void act_as_server(tosend_t* package) {
   exit(1);
  }
 
- while (fgets(buffer, BUF_SIZE, stdin) != NULL) {
+ if (fgets(buffer, BUF_SIZE, stdin) != NULL) {
   strcpy(package->message, buffer); 
   ret = sendto(newsockfd, buffer, BUF_SIZE, 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));  
   if (ret < 0) {  
