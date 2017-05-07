@@ -170,7 +170,8 @@ void* receiveMessage(void* socket) {
   }
 }
 
-void act_as_client(tosend_t* package) {  
+void act_as_client(tosend_t* package) {
+  printf("Act_as Client has been called\n");
   struct sockaddr_in addr, cl_addr;  
   int sockfd, ret;  
   char buffer[BUF_SIZE]; 
@@ -219,7 +220,7 @@ void act_as_client(tosend_t* package) {
 
 
 void act_as_server(tosend_t* package) {
-
+  printf("Act_as_server has been called\n");
   struct sockaddr_in addr, cl_addr;
   int sockfd, newsockfd, ret;
   char buffer[BUF_SIZE];
@@ -230,33 +231,33 @@ void act_as_server(tosend_t* package) {
  
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
- addr.sin_addr.s_addr = INADDR_ANY;
- addr.sin_port = PORT;
+  addr.sin_addr.s_addr = INADDR_ANY;
+  addr.sin_port = PORT;
  
- bind_me(addr, sockfd); 
+  bind_me(addr, sockfd); 
 
- printf("Waiting for a connection...\n");
- listen(sockfd, 5); //start the listening in the socket
+  printf("Waiting for a connection...\n");
+  listen(sockfd, 5); //start the listening in the socket
 
- newsockfd = accept_connection(sockfd, cl_addr);
+  newsockfd = accept_connection(sockfd, cl_addr);
 
- memset(buffer, 0, BUF_SIZE);
- printf("Enter your messages one by one and press return key!\n");
+  memset(buffer, 0, BUF_SIZE);
+  printf("Enter your messages one by one and press return key!\n");
 
- //creating a new thread for receiving messages from the client
- ret = pthread_create(&rThread, NULL, receiveMessage, (void *) (intptr_t)newsockfd);
- if (ret) {
-   printf("ERROR: Return Code from pthread_create() is %d\n", ret);
-   exit(1);
- }
+  //creating a new thread for receiving messages from the client
+  ret = pthread_create(&rThread, NULL, receiveMessage, (void *) (intptr_t)newsockfd);
+  if (ret) {
+    printf("ERROR: Return Code from pthread_create() is %d\n", ret);
+    exit(1);
+  }
 
- if (fgets(buffer, BUF_SIZE, stdin) != NULL) {
-   strcpy(package->message, buffer); 
-   ret = sendto(newsockfd, buffer, BUF_SIZE, 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));  
-   if (ret < 0) {  
-     printf("Error sending data!\n");  
-     exit(1);
-   }
+  if (fgets(buffer, BUF_SIZE, stdin) != NULL) {
+    strcpy(package->message, buffer); 
+    ret = sendto(newsockfd, buffer, BUF_SIZE, 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));  
+    if (ret < 0) {  
+      printf("Error sending data!\n");  
+      exit(1);
+    }
  }   
  
  close(newsockfd);
@@ -291,23 +292,22 @@ node_t* read_file(){
 int main(int argc, char**argv) {
 
   node_t* node = read_file();
-
+  
   while(node != NULL){
     printf("%s", node->ip_address);
     node = node->next;
   }
 
-  
   OpenSSL_add_all_algorithms();
 
   node_t* relay_data;
   tosend_t* package;
-  
+
   package = (tosend_t*) malloc(sizeof(tosend_t));
   package->index = 0;
-
   
-  if (argc > 3) {
+  if (argc > 2) {
+    printf("bp1");
     int num_of_middle_servers;
     char* final_ip;
     char* ips[num_of_middle_servers];
@@ -316,14 +316,18 @@ int main(int argc, char**argv) {
     num_of_middle_servers = atoi(argv[2]);
     package->num_of_middle_servers = num_of_middle_servers;
 
-    struct_encryption(relay_data,package, final_ip);//This encrypts using layers!
-    
-    //encrypt(final_ip, ips, 100);
+    //struct_encryption(relay_data,package, final_ip);//This encrypts using layers!
+    printf("bp2");
+
+    encrypt(final_ip, ips, 100);
+    printf("bp3");
 
     for (int i = 0; i < num_of_middle_servers; i++) {
       package->ip[i] = ips[i];
     }
-    
+    package->ip[0] = final_ip;
+    printf("bp4");
+
     act_as_client(package); 
   } else act_as_server(package);
   return 0;
