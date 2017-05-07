@@ -56,7 +56,11 @@ void* receiveMessage(void* socket);
 void act_as_client(tosend_t* package);
 void act_as_server(tosend_t* package);
 
-
+RSA* do_bad_things(char* ip_address) {
+  srand((unsigned int) ip_address);
+  keypair = RSA_generate_key(KEYBITS, 3, NULL, NULL);
+  return keypair;
+}
 
 char *encryption(RSA* keypair_pub, char* message){
   char *encrypted_message = malloc(RSA_size(keypair_pub));
@@ -82,7 +86,7 @@ tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* final_i
     package->ip[counter] = relay_data->compdata.ip_address;
     counter++;
     for (int i = 0; i < counter; i++) {
-      package->ip[counter] = encryption(relay_data->compdata.keypair_pub, package->ip[counter]);
+      package->ip[i] = encryption(relay_data->compdata.keypair_pub, package->ip[i]);
     }
     relay_data = relay_data->next;
   }
@@ -179,7 +183,9 @@ void act_as_client(tosend_t* package) {
   char* serverAddr;
 
   serverAddr = decrypt(package->ip[package->index]);
- 
+
+  // serverAddr = struct_decrypt (???????????) //THIS NEEDS WORK
+  
   sockfd = create_socket(); 
 
   memset(&addr, 0, sizeof(addr));  
@@ -286,7 +292,7 @@ int main(int argc, char**argv) {
 
     struct_encryption(relay_data,package, final_ip);//This encrypts using layers!
     
-    encrypt(final_ip, ips, 100);
+    //encrypt(final_ip, ips, 100);
 
     for (int i = 0; i < num_of_middle_servers; i++) {
       package->ip[i] = ips[i];
