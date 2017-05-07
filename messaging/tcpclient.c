@@ -19,8 +19,8 @@
 //https://shanetully.com/2012/04/simple-public-key-encryption-with-rsa-and-opensll/
 
 #define PORT 4444
-#define BUF_SIZE 2000
-#define KEYBITS 2048
+#define BUF_SIZE 512
+#define KEYBITS 4096
 #define ARBITRARY_MAX_RELAYS 100
 
 // Package that is sent from computer to computer.
@@ -45,6 +45,18 @@ typedef struct node {
 
 void act_as_client (tosend_t* package);
 void act_as_server (tosend_t* package);
+char *encryption(RSA* keypair_pub, char* message);
+tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* sender_ip);
+bool struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len);
+int create_socket();
+void bind_me(struct sockaddr_in addr, int sockfd);
+void connect_to_server(struct sockaddr_in addr, int sockfd);
+int accept_connection(int sockfd, struct sockaddr_in cl_addr);
+void* receiveMessage(void* socket);
+void act_as_client(tosend_t* package);
+void act_as_server(tosend_t* package);
+
+
 
 char *encryption(RSA* keypair_pub, char* message){
   char *encrypted_message = malloc(RSA_size(keypair_pub));
@@ -62,9 +74,10 @@ char *encryption(RSA* keypair_pub, char* message){
   return encrypted_message;
 }
 
-tosend_t* struct_encryption(node_t* relay_data, tosend_t* package) {
+tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* final_ip) {
   // For now this will all be using the same keypair, because we don't have a layout for multiple keys yet.
-  int counter = 0;
+  int counter = 1;
+  package->ip[0] = final_ip;
   while (relay_data != NULL) {
     package->ip[counter] = relay_data->compdata.ip_address;
     counter++;
@@ -75,6 +88,24 @@ tosend_t* struct_encryption(node_t* relay_data, tosend_t* package) {
   }
   return package;
 }
+
+bool struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len){
+  char *decrypted_message = malloc(RSA_size(keypair));
+  char *err = malloc(130);
+  //check this next line if errors.
+  for (int i = package->index; i < package->num_of_middle_servers; i++) {
+    if(RSA_private_decrypt(encrypt_len, (unsigned char*)package->ip[i], (unsigned char*)package->ip[i],
+                           keypair, RSA_PKCS1_OAEP_PADDING) == -1) {
+      ERR_load_crypto_strings();
+      ERR_error_string(ERR_get_error(),err);
+      fprintf(stderr,"Error decrypting message: %s\n", err);
+    } else {
+      printf("Decrypted message: %s\n", decrypted_message);
+    }
+  }
+  return (package->index == package->num_of_middle_servers);
+}
+
 
 void encrypt(char* final_IP, char** ips, int len) {
   for (int i = 0; i < len; i++) {
@@ -253,7 +284,7 @@ int main(int argc, char**argv) {
     num_of_middle_servers = atoi(argv[2]);
     package->num_of_middle_servers = num_of_middle_servers;
 
-    struct_encryption(relay_data,package);//This encrypts using layers!
+    struct_encryption(relay_data,package, final_ip);//This encrypts using layers!
     
     encrypt(final_ip, ips, 100);
 
