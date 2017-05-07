@@ -23,7 +23,7 @@ typedef struct tosend {
   char* message;
 } tosend_t;
 
-void act_as_client (char* serverAddr);
+void act_as_client (tosend_t* package);
 
 void encrypt(char* final_IP, char** ips, int len) {
   for (int i = 0; i < len; i++) {
@@ -48,11 +48,14 @@ void* receiveMessage(void * socket) {
   }
 }
 
-void act_as_client(char* serverAddr) {  
+void act_as_client(tosend_t* package) {  
  struct sockaddr_in addr, cl_addr;  
  int sockfd, ret;  
  char buffer[BUF_SIZE]; 
  pthread_t rThread;
+ char* serverAddr;
+
+ serverAddr = decrypt(package->ip[package->index]); 
  
  sockfd = socket(AF_INET, SOCK_STREAM, 0);  
  if (sockfd < 0) {  
@@ -83,8 +86,11 @@ void act_as_client(char* serverAddr) {
   exit(1);
  }
 
+ package->index++; 
+
+ //middle man should enter this once and go back to being servers 
  while (fgets(buffer, BUF_SIZE, stdin) != NULL) {
-  ret = sendto(sockfd, buffer, BUF_SIZE, 0, (struct sockaddr *) &addr, sizeof(addr));  
+   ret = sendto(sockfd, package, sizeof(tosend_t), 0, (struct sockaddr *) &addr, sizeof(addr));  
   if (ret < 0) {  
    printf("Error sending data!\n\t-%s", buffer);  
   }
@@ -189,7 +195,7 @@ int main(int argc, char**argv) {
       package->ip[i] = ips[i];
     }
     
-    act_as_client(final_ip); 
+    act_as_client(package); 
   } else act_as_server();
 
  return 0;
