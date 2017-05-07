@@ -234,7 +234,38 @@ void act_as_server(tosend_t* package) {
  return;
 }
 
+node_t* read_file(){
+  FILE *ptr_file;
+  char buf[1000];
+  node_t* prev = NULL;
+  ptr_file =fopen("ip.txt", "r");
+
+  if (!ptr_file)
+    return NULL;
+
+  while (fgets(buf,1000, ptr_file)!=NULL){
+    node_t * node = (node_t*) malloc(sizeof(node_t));
+    node->compdata = buf;
+    node->next = prev;
+    prev = node;
+  } 
+
+  fclose(ptr_file);
+
+  return prev;
+}
+
+
 int main(int argc, char**argv) {
+
+  node_t* node = read_file();
+
+  while(node != NULL){
+    printf("%s/n", node->compdata);
+  }
+
+  
+  /*
   OpenSSL_add_all_algorithms();
 
   node_t* relay_data;
@@ -264,6 +295,7 @@ int main(int argc, char**argv) {
     act_as_client(package); 
   } else act_as_server(package);
 
+  */
   return 0;
 }
 
