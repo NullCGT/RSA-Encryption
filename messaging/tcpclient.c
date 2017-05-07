@@ -31,15 +31,10 @@ typedef struct tosend {
   char* message;
 } tosend_t;
 
-// Struct containing the ip address and corresponding rsa key
-typedef struct ip_key  {
+// Linked list implementation linking to an ip_address and RSA key
+typedef struct node {
   char* ip_address;
   RSA* keypair_pub;
-} ip_key_t;
-
-// Linked list implementation linking to an ip_key struct
-typedef struct node {
-  ip_key_t compdata;
   struct node* next;
 } node_t;
 
@@ -79,10 +74,10 @@ tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* final_i
   int counter = 1;
   package->ip[0] = final_ip;
   while (relay_data != NULL) {
-    package->ip[counter] = relay_data->compdata.ip_address;
+    package->ip[counter] = relay_data->ip_address;
     counter++;
     for (int i = 0; i < counter; i++) {
-      package->ip[counter] = encryption(relay_data->compdata.keypair_pub, package->ip[counter]);
+      package->ip[counter] = encryption(relay_data->keypair_pub, package->ip[counter]);
     }
     relay_data = relay_data->next;
   }
@@ -275,10 +270,10 @@ node_t* read_file(){
     return NULL;
 
   while (fgets(buf,1000, ptr_file)!=NULL){
-    node_t * node = (node_t*) malloc(sizeof(node_t));
-    node->compdata = buf;
-    node->next = prev;
-    prev = node;
+    node_t * cur = (node_t*) malloc(sizeof(node_t));
+    cur->ip_address = buf;
+    cur->next = prev;
+    prev = cur;
   } 
 
   fclose(ptr_file);
@@ -292,11 +287,11 @@ int main(int argc, char**argv) {
   node_t* node = read_file();
 
   while(node != NULL){
-    printf("%s/n", node->compdata);
+    printf("%s/n", node->ip_address);
+    node = node->next;
   }
 
   
-  /*
   OpenSSL_add_all_algorithms();
 
   node_t* relay_data;
@@ -325,8 +320,6 @@ int main(int argc, char**argv) {
     
     act_as_client(package); 
   } else act_as_server(package);
-
-  */
   return 0;
 }
 
