@@ -53,7 +53,7 @@ void act_as_server(tosend_t* package);
 
 RSA* do_bad_things(char* ip_address) {
   srand((unsigned int) ip_address);
-  keypair = RSA_generate_key(KEYBITS, 3, NULL, NULL);
+  RSA* keypair = RSA_generate_key(KEYBITS, 3, NULL, NULL);
   return keypair;
 }
 
@@ -293,7 +293,7 @@ int main(int argc, char**argv) {
   node_t* node = read_file();
 
   while(node != NULL){
-    printf("%s/n", node->ip_address);
+    printf("%s", node->ip_address);
     node = node->next;
   }
 
