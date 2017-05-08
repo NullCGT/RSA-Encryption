@@ -154,8 +154,7 @@ char* serialize(tosend_t* package) {
   strcat(serial,temp);
   strcat(serial, field_delimeter);
 
-  int i=0;
-  while(package->ip[i] != NULL){
+  for (int i = 0; i < package->num_of_middle_servers; i++) {
     strcat(serial,package->ip[i]);
     strcat(serial, ip_delimeter);
     i++;
