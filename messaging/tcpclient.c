@@ -148,21 +148,27 @@ char* serialize(tosend_t* package) {
 
   sprintf(temp, "%d", package->index);
   strcat(serial,temp);
+  strcat(serial,NULL);
   strcat(serial, field_delimeter);
-
+  strcat(serial,NULL);
+  
   sprintf(temp, "%d", package->num_of_middle_servers);
   strcat(serial,temp);
+  strcat(serial,NULL);
   strcat(serial, field_delimeter);
+  strcat(serial,NULL);
 
   for (int i = 0; i < package->num_of_middle_servers; i++) {
     strcat(serial,package->ip[i]);
+    strcat(serial,NULL);
     strcat(serial, ip_delimeter);
-    i++;
+    strcat(serial,NULL);
   }
   
   strcat(serial,field_delimeter);
+  strcat(serial,NULL);
   strcat(serial, package->message);
-
+  strcat(serial,NULL);
   return serial;
 }
 
@@ -191,7 +197,7 @@ tosend_t* deserialize(char* serial){
   strcpy(ip_addresses, strtok_r(token, field_delimeter, &saveptr2));
 
   strcpy(ip_addresses, strtok_r (token, ip_delimeter, &saveptr2));
-  for(int i=0; i < package->num_of_middle_servers; i++){
+  for(int i=0; i < package->num_of_middle_servers + 1; i++){
     strcpy(package->ip[i], ip_addresses);
     strcpy(ip_addresses, strtok_r(NULL, ip_delimeter, &saveptr2));
   }
