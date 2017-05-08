@@ -148,28 +148,28 @@ char* serialize(tosend_t* package) {
 
   sprintf(temp, "%d", package->index);
   strcat(serial,temp);
-  strcat(serial,NULL);
+  strcat(serial,'/0');
   strcat(serial, field_delimeter);
-  strcat(serial,NULL);
+  strcat(serial,'/0');
   
   sprintf(temp, "%d", package->num_of_middle_servers);
   strcat(serial,temp);
-  strcat(serial,NULL);
+  strcat(serial,'/0');
   strcat(serial, field_delimeter);
-  strcat(serial,NULL);
+  strcat(serial,'/0');
 
   for (int i = 0; i < package->num_of_middle_servers; i++) {
     strcat(serial,package->ip[i]);
-    strcat(serial,NULL);
+    strcat(serial,'/0');
     strcat(serial, ip_delimeter);
-    strcat(serial,NULL);
+    strcat(serial,'/0');
   }
   
   strcat(serial,field_delimeter);
-  strcat(serial,NULL);
+  strcat(serial,'/0');
   strcat(serial, package->message);
   printf("%s\n",serial);
-  strcat(serial,NULL);
+  strcat(serial,'/0');
   return serial;
 }
 
