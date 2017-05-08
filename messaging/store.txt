@@ -1,4 +1,4 @@
-l#include <netdb.h>
+#include <netdb.h>
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -57,13 +57,12 @@ char* serialize(tosend_t* package);
 tosend_t* deserialize(char* serial);
 
 //Initialization of our package struct for cleanup
-//
 void initialize_package(tosend_t* package, int num_of_middle_servers, char* final_ip, char* message) {
   package->index = 0;
   package->num_of_middle_servers = num_of_middle_servers;
-  
-  for(int i = 0; i < ARBITRARY_MAX_RELAYS; i++) 
-    package->ip[i] = (char*)malloc(sizeof(char)*513); 
+
+  for(int i = 0; i < ARBITRARY_MAX_RELAYS; i++)
+    package->ip[i] = (char*)malloc(sizeof(char)*513);
 
   package->message = (char*) malloc(sizeof(char)*1000);
   message = "Welcome to our chat!"; //DUMMY MESSAGE;
@@ -136,12 +135,12 @@ char* decrypt(char* encrypted_IP) {
   return encrypted_IP;
 }
 
-//Our serializer for the package struct to a single string, separated by "field_delimeter" to
-//send through sockets
+//Serializes tosend_t packages into a single string. This is required to send
+//the information through the sockets. Uses two different delimiters for each
+//piece of the tosend_t package and the individual ip.
+//@returns
+//    char* string of the serialized package
 char* serialize(tosend_t* package){
-
-  char* field_delimeter = "field_delimeter";
-  char* ip_delimeter = "ip_delimeter"; //separate the ip addresses stored in the array 
 
   printf("index: %d\n", package->index);
   printf("num serv: %d\n", package->num_of_middle_servers);
@@ -150,27 +149,26 @@ char* serialize(tosend_t* package){
   printf("ip3: %s\n", package->ip[2]);
   printf("message: %s\n", package->message);
 
-  
   printf("in seralize\n");
-  char* serial = (char*) malloc(sizeof(char)*BUF_SIZE);
+  char*serial = (char*) malloc(sizeof(char)*BUF_SIZE);
   char* temp = (char*) malloc(sizeof(char)*BUF_SIZE);
 
   sprintf(temp, "%d", package->index);
   strcat(serial,temp);
-  strcat(serial, field_delimeter);
+  strcat(serial,"?");
 
   sprintf(temp, "%d", package->num_of_middle_servers);
   strcat(serial,temp);
-  strcat(serial, field_delimeter);
+  strcat(serial,"?");
 
   int i=0;
   while(package->ip[i] != NULL){
     strcat(serial,package->ip[i]);
-    strcat(serial, ip_delimeter);
+    strcat(serial,"+");
     i++;
   }
-  
-  strcat(serial,field_delimeter);
+
+  strcat(serial,"?");
   strcat(serial, package->message);
 
   printf("INSIDE serial: %s\n", serial);
@@ -178,30 +176,29 @@ char* serialize(tosend_t* package){
 }
 
 
-//Deserializes the inputted string.
-//Splits each package section with the "field_delimeter" string,
-// and splits ip addresses with the "ip_delimeter" string.
-//@returns: tosend_t stuct
-tosend_t* deserialize(char* serial){
 
-  char*
+//Deserializes the inputted string. Splits each package section with a dilimter 
+character, and splits ip addresses with the '+' character.
+// @returns:
+//    tosend_t stuct
+tosend_t* deserialize(char* serial){
   printf("in deseralize\n");
   printf("serial: %s\n", serial);
 
   tosend_t* package = (tosend_t*) malloc(sizeof(tosend_t));
   package->message=(char*) malloc(sizeof(char)*512);
-  
-  char* saveptr1 = (char*) malloc(sizeof(char)*512);
+
+  char *saveptr1 = (char*) malloc(sizeof(char)*512);
   char* saveptr2 = (char*) malloc(sizeof(char)*512);
-  char* token = (char*) malloc(sizeof(char)*512);
+  char * token = (char*) malloc(sizeof(char)*512);
   char* ip_address = (char*) malloc(sizeof(char)*512);;
 
-  strcpy(token, strtok_r (serial, "field", &saveptr1));
+  strcpy(token, strtok_r (serial, "?", &saveptr1));
   package->index = atoi(token);
 
   strcpy(token, strtok_r(NULL, "?", &saveptr1));
   package->num_of_middle_servers = atoi(token);
-  
+
   strcpy(token, strtok_r(NULL, "?", &saveptr1));
   strcpy(ip_address, strtok_r(token,"?", &saveptr2));
 
@@ -325,7 +322,7 @@ void act_as_client(tosend_t* package) {
   char* my_ip = "132.161.196.12";
   RSA* server_keypair = do_bad_things(my_ip);
   //struct_decryption(server_keypair, package, sizeof(server_keypair));
-  
+
   sockfd = create_socket();
   addr = connect_to_server(sockfd, "132.161.196.124");
   memset(buffer, 0, BUF_SIZE);
@@ -337,9 +334,9 @@ void act_as_client(tosend_t* package) {
     exit(1);
   }
 
-  
+
   char* serializedMessage = (char*) malloc(sizeof(char*));
-    
+
   while (fgets(buffer, BUF_SIZE, stdin) != NULL) {
     strcpy(package->message, buffer);
     printf("pre seralize\n");
@@ -351,7 +348,7 @@ void act_as_client(tosend_t* package) {
       printf("Error sending data!\n\t-%s", buffer);
     }
   }
-  
+
   close(sockfd);
   pthread_exit(NULL);
 
@@ -372,9 +369,9 @@ void act_as_middle_server(tosend_t* package) {
   char* my_ip = "this is where the ip would go.";
   RSA* server_keypair = do_bad_things(my_ip);
   struct_decryption(server_keypair, package, sizeof(server_keypair));
-  
+
   serverAddr = (char*) malloc(sizeof(char)*512);
-  strcpy(serverAddr, package->ip[package->index]); 
+  strcpy(serverAddr, package->ip[package->index]);
 
   sockfd = create_socket();
   addr = connect_to_server(sockfd, serverAddr);
@@ -400,7 +397,7 @@ void act_as_middle_server(tosend_t* package) {
   close(sockfd);
   pthread_exit(NULL);
   act_as_server(package);
-  
+
   return;
 }
 
@@ -447,7 +444,7 @@ void act_as_server(tosend_t* package) {
  close(newsockfd);
  close(sockfd);
  pthread_exit(NULL);
- 
+
  return;
 }
 
@@ -458,7 +455,7 @@ node_t* read_file(){
   char buf[20];
   char* list[ARBITRARY_MAX_RELAYS];
   node_t* prev;
-  
+
   ptr_file =fopen("ip.txt", "r");
   prev = NULL;
   if (!ptr_file) return NULL;
@@ -519,7 +516,7 @@ int main(int argc, char**argv) {
 
   OpenSSL_add_all_algorithms();
 
-  node_t* relay_data; 
+  node_t* relay_data;
   tosend_t* package;
   package = (tosend_t*) malloc(sizeof(tosend_t));
 
