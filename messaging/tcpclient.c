@@ -22,6 +22,7 @@
 #define BUF_SIZE KEYBITS / 4
 #define ARBITRARY_MAX_RELAYS 100
 
+
 // Package that is sent from computer to computer.
 typedef struct tosend {
   int index;
@@ -41,8 +42,8 @@ void act_as_client (tosend_t* package);
 void act_as_middle_server (tosend_t* package);
 void act_as_server (tosend_t* package);
 char *encryption(RSA* keypair_pub, char* message);
-tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* sender_ip);
-bool struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len);
+tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* sender_ip, RSA* pub_for_final);
+tosend_t* struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len);
 int create_socket();
 void bind_me(int sockfd, char* ip);
 struct sockaddr_in connect_to_server(int sockfd, char* ip);
@@ -94,10 +95,10 @@ char *encryption(RSA* keypair_pub, char* message){
   return encrypted_message;
 }
 
-tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* final_ip) {
+tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* final_ip, RSA* pub_for_final) {
   // For now this will all be using the same keypair, because we don't have a layout for multiple keys yet.
   int counter = 1;
-  package->ip[0] = final_ip;
+  package->ip[0] = encryption(pub_for_final,final_ip);
   while (relay_data != NULL) {
     package->ip[counter] = relay_data->ip_address;
     counter++;
@@ -109,22 +110,23 @@ tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* final_i
   return package;
 }
 
-bool struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len){
+tosend_t* struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len){
   char *decrypted_message = malloc(RSA_size(keypair));
   char *err = malloc(130);
+  int middle= package->num_of_middle_servers;
   //check this next line if errors.
-  for (int i = package->index; i < package->num_of_middle_servers; i++) {
-    if(RSA_private_decrypt(encrypt_len, (unsigned char*)package->ip[i], (unsigned char*)package->ip[i],
+  for (int i = package->index; i <=middle; i++) {
+    if(RSA_private_decrypt(encrypt_len, (unsigned char*)package->ip[middle-i], (unsigned char*)package->ip[middle-i],
                            keypair, RSA_PKCS1_OAEP_PADDING) == -1) {
       ERR_load_crypto_strings();
       ERR_error_string(ERR_get_error(),err);
       fprintf(stderr,"Error decrypting message: %s\n", err);
-    } else {
-      printf("Decrypted message: %s\n", decrypted_message);
     }
   }
-  return (package->index == package->num_of_middle_servers);
+  package->index++;
+  return package;
 }
+
 
 
 char* decrypt(char* encrypted_IP) {
@@ -337,24 +339,53 @@ void act_as_server(tosend_t* package) {
  return;
 }
 
+node_t* insert(node_t* head, char*buf){
+  node_t *temp=head;
+  node_t * cur = (node_t*) malloc(sizeof(node_t));
+  cur->ip_address = buf;
+  cur->keypair_pub = do_bad_things(cur->ip_address);
+  cur->next = NULL;
+  if (head == NULL){
+    head=cur;
+  }else{
+    while(temp->next!=NULL){
+      temp=temp->next;
+    }
+    temp->next=cur;
+  }
+  return head;
+}
 
 node_t* read_file(){
   FILE *ptr_file;
-  char buf[1000];
-  node_t* prev = NULL;
-  node_t* first = NULL;
+  char buf[20];
+  char* list[ARBITRARY_MAX_RELAYS];
+  //node_t* head = (node_t*) malloc(sizeof(node_t));
+  //node_t* cur = head;
   ptr_file =fopen("ip.txt", "r");
-
+  /*  int spot = 0;
+  while(fgets(buf,1000,ptr_file)!=NULL) {
+    list[spot] = buf;
+    spot++;
+  }
+  for (int i = 0; i <= spot; i++) {
+    cur->ip_address = list[i];
+    cur->keypair_pub = do_bad_things(cur->ip_address);
+    if (i < spot) {
+      cur->next = (node_t*) malloc(sizeof(node_t));
+0    }
+    cur = cur->next;
+    }*/
+  node_t* prev = NULL;
   if (!ptr_file)
     return NULL;
-  while (fgets(buf,1000, ptr_file)!=NULL){
-    
-    node_t * cur = (node_t*) malloc(sizeof(node_t));
-    cur->ip_address = buf;
-    cur->keypair_pub = do_bad_things(cur->ip_address);
-    cur->next = prev;
-    prev=cur;
-  } 
+  while (fgets(buf,20, ptr_file)!=NULL){
+    if(prev!=NULL){
+      printf("%s",prev->ip_address);
+    }
+    prev=insert(prev,buf);
+    printf("%s",prev->ip_address);
+  }
   fclose(ptr_file);
   return prev;
 }
