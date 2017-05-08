@@ -9,7 +9,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
-
 #include <stdbool.h>
 #include <openssl/err.h>
 #include <openssl/rsa.h>
@@ -28,7 +27,7 @@ typedef struct tosend {
   int index;
   int num_of_middle_servers;
   char* ip[ARBITRARY_MAX_RELAYS];
-  char* message;
+  char* message; 
 } tosend_t;
 
 // Linked list implementation linking to an ip_address and RSA key
@@ -62,7 +61,7 @@ void encrypt(char* final_IP, char** ips, int len) {
 void initialize_package(tosend_t* package, int num_of_middle_servers, char* final_ip, char* message) {
   package->index = 0;
   package->num_of_middle_servers = num_of_middle_servers;
-  package->message = message;
+  package->message; 
 
   char* ips[100];
   encrypt(final_ip, ips, 100);
@@ -199,7 +198,7 @@ void* receiveMessage(void* socket) {
   if (ret < 0) printf("Error receiving the message!\n");
   else {
     if (package->index >= package->num_of_middle_servers) fputs(package->message, stdout);
-    else act_as_server(package);
+    else act_as_middle_server(package);
   }
 }
 
@@ -208,7 +207,7 @@ void act_as_client(tosend_t* package) {
   int sockfd, ret;  
   char buffer[BUF_SIZE]; 
   pthread_t rThread;
-  char* serverAddr = "132.161.196.208";
+  char* serverAddr = "132.161.196.111";
 
   //serverAddr = decrypt(package->ip[package->index]);
 
@@ -371,7 +370,7 @@ int main(int argc, char**argv) {
   package = (tosend_t*) malloc(sizeof(tosend_t));
   
   if (argc > 2) {
-    //initialize_package(package, (int) argv[1], (char*) argv[2], (char*) argv[3]);
+    initialize_package(package, (int) argv[1], (char*) argv[2], (char*) argv[3]);
     act_as_client(package); 
   } else {
     initialize_package(package, 2, "", "");
