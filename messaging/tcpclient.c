@@ -18,8 +18,8 @@
 //https://shanetully.com/2012/04/simple-public-key-encryption-with-rsa-and-opensll/
 
 #define PORT 4444
-#define BUF_SIZE 512
 #define KEYBITS 4096
+#define BUF_SIZE KEYBITS / 4
 #define ARBITRARY_MAX_RELAYS 100
 
 // Package that is sent from computer to computer.
