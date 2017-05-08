@@ -50,6 +50,27 @@ int accept_connection(int sockfd, struct sockaddr_in cl_addr);
 void* receiveMessage(void* socket);
 void act_as_client(tosend_t* package);
 void act_as_server(tosend_t* package);
+void initialize_package(tosend_t* package, int num_middle_servers, char* final_ip, char* message);
+
+void encrypt(char* final_IP, char** ips, int len) {
+  for (int i = 0; i < len; i++) {
+    ips[i] = final_IP; 
+  }
+}
+
+void initialize_package(tosend_t* package, int num_of_middle_servers, char* final_ip, char* message) {
+  package->index = 0;
+  package->num_of_middle_servers = num_of_middle_servers;
+  package->message = message;
+
+  char* ips[100];
+  encrypt(final_ip, ips, 100);
+
+  for (int i = 0; i < num_of_middle_servers; i++) {
+    package->ip[i] = ips[i];
+  }
+}
+
 
 RSA* do_bad_things(char* ip_address) {
   srand((unsigned int) ip_address);
@@ -105,12 +126,6 @@ bool struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len){
   return (package->index == package->num_of_middle_servers);
 }
 
-
-void encrypt(char* final_IP, char** ips, int len) {
-  for (int i = 0; i < len; i++) {
-    ips[i] = final_IP; 
-  }
-}
 
 char* decrypt(char* encrypted_IP) {
   return encrypted_IP; 
@@ -267,6 +282,7 @@ void act_as_server(tosend_t* package) {
  return;
 }
 
+/**
 node_t* read_file(){
   FILE *ptr_file;
   char buf[1000];
@@ -287,49 +303,33 @@ node_t* read_file(){
 
   return prev;
 }
+*/
 
 
 int main(int argc, char**argv) {
 
+  /*
   node_t* node = read_file();
   
   while(node != NULL){
     printf("%s", node->ip_address);
     node = node->next;
   }
-
+ 
   OpenSSL_add_all_algorithms();
 
   node_t* relay_data;
+  */
   tosend_t* package;
-
   package = (tosend_t*) malloc(sizeof(tosend_t));
-  package->index = 0;
   
   if (argc > 2) {
-    printf("bp1");
-    int num_of_middle_servers;
-    char* final_ip;
-    char* ips[num_of_middle_servers];
-    
-    strcpy(final_ip, argv[1]);
-    num_of_middle_servers = atoi(argv[2]);
-    package->num_of_middle_servers = num_of_middle_servers;
-
-    //struct_encryption(relay_data,package, final_ip);//This encrypts using layers!
-    printf("bp2");
-
-    encrypt(final_ip, ips, 100);
-    printf("bp3");
-
-    for (int i = 0; i < num_of_middle_servers; i++) {
-      package->ip[i] = ips[i];
-    }
-    package->ip[0] = final_ip;
-    printf("bp4");
-
+    //initialize_package(package, (int) argv[1], (char*) argv[2], (char*) argv[3]);
     act_as_client(package); 
-  } else act_as_server(package);
+  } else {
+    initialize_package(package, 2, "", "");
+    act_as_server(package);
+  }
   return 0;
 }
 
