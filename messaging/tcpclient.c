@@ -143,15 +143,6 @@ char* serialize(tosend_t* package) {
   char* field_delimeter = "field_delimeter";
   char* ip_delimeter = "ip_delimeter";
   
-  printf("index: %d\n", package->index);
-  printf("num serv: %d\n", package->num_of_middle_servers);
-  printf("ip1: %s\n", package->ip[0]);
-  printf("ip2: %s\n", package->ip[1]);
-  printf("ip3: %s\n", package->ip[2]);
-  printf("message: %s\n", package->message);
-
-  
-  printf("in seralize\n");
   char* serial = (char*) malloc(sizeof(char)*BUFF_SIZE);
   char* temp = (char*) malloc(sizeof(char)*BUFF_SIZE);
 
@@ -173,7 +164,6 @@ char* serialize(tosend_t* package) {
   strcat(serial,field_delimeter);
   strcat(serial, package->message);
 
-  printf("INSIDE serial: %s\n", serial);
   return serial;
 }
 
@@ -186,32 +176,28 @@ tosend_t* deserialize(char* serial){
 
   char* field_delimeter = "field_delimeter";
   char* ip_delimeter = "ip_delimeter";
-  
-  printf("in deseralize\n");
-  printf("serial: %s\n", serial);
 
   tosend_t* package = (tosend_t*) malloc(sizeof(tosend_t));
-  package->message=(char*) malloc(sizeof(char)*512);
   
   char* saveptr1 = (char*) malloc(sizeof(char)*512);
   char* saveptr2 = (char*) malloc(sizeof(char)*512);
   char* token = (char*) malloc(sizeof(char)*512);
-  char* ip_address = (char*) malloc(sizeof(char)*512);;
 
   strcpy(token, strtok_r (serial, field_delimeter, &saveptr1));
   package->index = atoi(token);
 
   strcpy(token, strtok_r(NULL, field_delimeter, &saveptr1));
   package->num_of_middle_servers = atoi(token);
+
+  char* ip_addresses = (char*) malloc(sizeof(char)*512*(package->num_of_middle_servers+1));;
   
   strcpy(token, strtok_r(NULL, field_delimeter, &saveptr1));
-  strcpy(ip_address, strtok_r(token, field_delimeter, &saveptr2));
+  strcpy(ip_addresses, strtok_r(token, field_delimeter, &saveptr2));
 
-  strcpy(ip_address, strtok_r (token, ip_delimeter, &saveptr2));
-  for(int i=0; i<package->num_of_middle_servers; i++){
-    package->ip[i] = (char*) malloc(sizeof(char)*512);
-    strcpy(package->ip[i], ip_address);
-    strcpy(ip_address, strtok_r(NULL, ip_delimeter, &saveptr2));
+  strcpy(ip_addresses, strtok_r (token, ip_delimeter, &saveptr2));
+  for(int i=0; i < package->num_of_middle_servers; i++){
+    strcpy(package->ip[i], ip_addresses);
+    strcpy(ip_addresses, strtok_r(NULL, ip_delimeter, &saveptr2));
   }
 
   strcpy(token, strtok_r(NULL, field_delimeter, &saveptr1));
@@ -332,6 +318,7 @@ void act_as_client(tosend_t* package) {
   sockfd = create_socket();
   addr = connect_to_server(sockfd, "132.161.196.124");
 
+  printf("Enter your messages one by one and press return key!\n");
   //creating a new thread for receiving messages from the server
   ret = pthread_create(&rThread, NULL, receiveMessage, (void *) (intptr_t)sockfd);
   if (ret) {
@@ -382,7 +369,6 @@ void act_as_middle_server(tosend_t* package) {
   sockfd = create_socket();
   addr = connect_to_server(sockfd, serverAddr);
 
-  memset(buffer, 0, BUFF_SIZE);
   printf("Enter your messages one by one and press return key!\n");
 
   //creating a new thread for receiving messages from the server
