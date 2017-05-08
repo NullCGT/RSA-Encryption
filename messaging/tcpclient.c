@@ -360,54 +360,24 @@ void act_as_server(tosend_t* package) {
  return;
 }
 
-//??
-node_t* insert(node_t* head, char*buf){
-  node_t *temp=head;
-  node_t * cur = (node_t*) malloc(sizeof(node_t));
-  cur->ip_address = buf;
-  cur->keypair_pub = do_bad_things(cur->ip_address);
-  cur->next = NULL;
-  if (head == NULL){
-    head=cur;
-  }else{
-    while(temp->next!=NULL){
-      temp=temp->next;
-    }
-    temp->next=cur;
-  }
-  return head;
-}
 
 //Reads a list of IP addresses from file
 node_t* read_file(){
   FILE *ptr_file;
   char buf[20];
   char* list[ARBITRARY_MAX_RELAYS];
-  //node_t* head = (node_t*) malloc(sizeof(node_t));
-  //node_t* cur = head;
   ptr_file =fopen("ip.txt", "r");
-  /*  int spot = 0;
-  while(fgets(buf,1000,ptr_file)!=NULL) {
-    list[spot] = buf;
-    spot++;
-  }
-  for (int i = 0; i <= spot; i++) {
-    cur->ip_address = list[i];
-    cur->keypair_pub = do_bad_things(cur->ip_address);
-    if (i < spot) {
-      cur->next = (node_t*) malloc(sizeof(node_t));
-0    }
-    cur = cur->next;
-    }*/
   node_t* prev = NULL;
   if (!ptr_file)
     return NULL;
+  //reading file
   while (fgets(buf,20, ptr_file)!=NULL){
-    if(prev!=NULL){
-      printf("%s",prev->ip_address);
-    }
-    prev=insert(prev,buf);
-    printf("%s",prev->ip_address);
+    node_t* cur=(node_t*)malloc(sizeof(node_t));
+    cur->ip_address=malloc(sizeof(char)*20);
+    strcpy(cur->ip_address,buf);
+    cur->keypair_pub = do_bad_things(cur->ip_address);
+    cur->next = prev;
+    prev=cur;
   }
   fclose(ptr_file);
   return prev;
