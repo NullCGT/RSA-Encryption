@@ -85,7 +85,7 @@ char *encryption(RSA* keypair_pub, char* message){
   int encrypt_len;
   char *err = malloc(130);
 
-  if((encrypt_len = RSA_public_encrypt(strlen(message)+1, (unsigned char*) message,
+  if((encrypt_len = RSA_public_encrypt(RSA_size(keypair_pub)-42, (unsigned char*) message,
                                        (unsigned char*)encrypted_message, keypair_pub, RSA_PKCS1_OAEP_PADDING)) == -1) {
     ERR_load_crypto_strings();
     ERR_error_string(ERR_get_error(), err);
@@ -121,7 +121,7 @@ tosend_t* struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len){
   int middle= package->num_of_middle_servers;
   //check this next line if errors.
   for (int i = package->index; i <=middle; i++) {
-    if(RSA_private_decrypt(encrypt_len, (unsigned char*)package->ip[middle-i], (unsigned char*)package->ip[middle-i], keypair, RSA_PKCS1_OAEP_PADDING) == -1) {
+    if(RSA_private_decrypt(encrypt_len-42, (unsigned char*)package->ip[middle-i], (unsigned char*)package->ip[middle-i], keypair, RSA_PKCS1_OAEP_PADDING) == -1) {
       ERR_load_crypto_strings();
       ERR_error_string(ERR_get_error(),err);
       fprintf(stderr,"Error decrypting message: %s\n", err);
@@ -183,11 +183,8 @@ tosend_t* deserialize(char* serial){
   char* saveptr2 = (char*) malloc(sizeof(char)*((512 + strlen(ip_delimeter) + 1)*(package->num_of_middle_servers + 1)));
   char* token = (char*) malloc(sizeof(char)*512);
 
-  strcpy(token, strtok_r (serial, field_delimeter, &saveptr1)); //seg
-  package->index = atoi(token);
-
-  strcpy(token, strtok_r(NULL, field_delimeter, &saveptr1));
-  package->num_of_middle_servers = atoi(token);
+  package->index = atoi(strtok_r (serial, field_delimeter, &saveptr1)); //seg
+  package->num_of_middle_servers = atoi(strtok_r(NULL, field_delimeter, &saveptr1));
 
   char* ip_addresses = (char*) malloc(sizeof(char)*((512 + strlen(ip_delimeter) + 1)*(package->num_of_middle_servers + 1)));
   
@@ -200,8 +197,7 @@ tosend_t* deserialize(char* serial){
     strcpy(ip_addresses, strtok_r(NULL, ip_delimeter, &saveptr2));
   }
 
-  strcpy(token, strtok_r(NULL, field_delimeter, &saveptr1));
-  strcpy(package->message, token);
+  strcpy(package->message, strtok_r(NULL, field_delimeter, &saveptr1));
 
   return package;
 }
