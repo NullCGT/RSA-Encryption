@@ -1,4 +1,4 @@
-l#include <netdb.h>
+#include <netdb.h>
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -136,13 +136,13 @@ char* decrypt(char* encrypted_IP) {
   return encrypted_IP;
 }
 
-//Our serializer for the package struct to a single string, separated by "field_delimeter" to
-//send through sockets
-char* serialize(tosend_t* package){
+//A serializer for the package struct to a single string, separated by "field_delimeter" to
+//send through sockets; separate the ip addresses stored in the array eith "ip_delimeter" string
+char* serialize(tosend_t* package) {
 
   char* field_delimeter = "field_delimeter";
-  char* ip_delimeter = "ip_delimeter"; //separate the ip addresses stored in the array 
-
+  char* ip_delimeter = "ip_delimeter";
+  
   printf("index: %d\n", package->index);
   printf("num serv: %d\n", package->num_of_middle_servers);
   printf("ip1: %s\n", package->ip[0]);
@@ -180,11 +180,13 @@ char* serialize(tosend_t* package){
 
 //Deserializes the inputted string.
 //Splits each package section with the "field_delimeter" string,
-// and splits ip addresses with the "ip_delimeter" string.
+//and splits ip addresses with the "ip_delimeter" string.
 //@returns: tosend_t stuct
 tosend_t* deserialize(char* serial){
 
-  char*
+  char* field_delimeter = "field_delimeter";
+  char* ip_delimeter = "ip_delimeter";
+  
   printf("in deseralize\n");
   printf("serial: %s\n", serial);
 
@@ -196,23 +198,23 @@ tosend_t* deserialize(char* serial){
   char* token = (char*) malloc(sizeof(char)*512);
   char* ip_address = (char*) malloc(sizeof(char)*512);;
 
-  strcpy(token, strtok_r (serial, "field", &saveptr1));
+  strcpy(token, strtok_r (serial, field_delimeter, &saveptr1));
   package->index = atoi(token);
 
-  strcpy(token, strtok_r(NULL, "?", &saveptr1));
+  strcpy(token, strtok_r(NULL, field_delimeter, &saveptr1));
   package->num_of_middle_servers = atoi(token);
   
-  strcpy(token, strtok_r(NULL, "?", &saveptr1));
-  strcpy(ip_address, strtok_r(token,"?", &saveptr2));
+  strcpy(token, strtok_r(NULL, field_delimeter, &saveptr1));
+  strcpy(ip_address, strtok_r(token, field_delimeter, &saveptr2));
 
-  strcpy(ip_address, strtok_r (token, "+", &saveptr2));
+  strcpy(ip_address, strtok_r (token, ip_delimeter, &saveptr2));
   for(int i=0; i<package->num_of_middle_servers; i++){
     package->ip[i] = (char*) malloc(sizeof(char)*512);
     strcpy(package->ip[i], ip_address);
-    strcpy(ip_address, strtok_r(NULL, "+", &saveptr2));
+    strcpy(ip_address, strtok_r(NULL, ip_delimeter, &saveptr2));
   }
 
-  strcpy(token, strtok_r(NULL, "?", &saveptr1));
+  strcpy(token, strtok_r(NULL, field_delimeter, &saveptr1));
   strcpy(package->message, token);
 
   return package;
