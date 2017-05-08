@@ -163,7 +163,7 @@ char* serialize(tosend_t* package) {
   
   strcat(serial,field_delimeter);
   strcat(serial, package->message);
-
+  printf("%s\n",serial);
   return serial;
 }
 
