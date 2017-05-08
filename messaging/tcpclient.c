@@ -53,25 +53,25 @@ void* receiveMessage(void* socket);
 void act_as_client(tosend_t* package);
 void act_as_server(tosend_t* package);
 void initialize_package(tosend_t* package, int num_middle_servers, char* final_ip, char* message);
-
+/*
 void encrypt(char* final_IP, char** ips, int len) {
   for (int i = 0; i < len; i++) {
-    ips[i] = final_IP;
+    strcpy(ips[i], final_IP);
   }
 }
+*/
 
 //Initialization of our package struct for cleanup
 void initialize_package(tosend_t* package, int num_of_middle_servers, char* final_ip, char* message) {
   package->index = 0;
   package->num_of_middle_servers = num_of_middle_servers;
-  package->message = (char*) malloc(sizeof(char)*1000);
-  strcpy(package->message, message);
+  
+  for(int i = 0; i < ARBITRARY_MAX_RELAYS; i++) 
+    package->ip[i] = (char*)malloc(sizeof(char)*513); 
 
-  char* ips[100];
-  encrypt(final_ip, ips, 100);
-  for (int i = 0; i < num_of_middle_servers; i++) {
-    package->ip[i] = ips[i];
-  }
+  package->message = (char*) malloc(sizeof(char)*1000);
+  message = "Welcome to our chat!" //DUMMY MESSAGE;
+  strcpy(package->message, message);
 }
 
 //An RSA generator created on bad practice
@@ -103,12 +103,12 @@ char *encryption(RSA* keypair_pub, char* message){
 tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* final_ip, RSA* pub_for_final) {
   // For now this will all be using the same keypair, because we don't have a layout for multiple keys yet.
   int counter = 1;
-  package->ip[0] = encryption(pub_for_final,final_ip);
+  strcpy(package->ip[0], encryption(pub_for_final,final_ip));
   while (relay_data != NULL) {
-    package->ip[counter] = relay_data->ip_address;
+    strcpy(package->ip[counter], relay_data->ip_address);
     counter++;
     for (int i = 0; i < counter; i++) {
-      package->ip[i] = encryption(relay_data->keypair_pub, package->ip[i]);
+      strcpy(package->ip[i], encryption(relay_data->keypair_pub, package->ip[i]));
     }
     relay_data = relay_data->next;
   }
@@ -230,27 +230,27 @@ void act_as_client(tosend_t* package) {
   char buffer[BUF_SIZE];
   pthread_t rThread;
   char* serverAddr = "132.161.196.111";
-
+ printf("2");
   //serverAddr = decrypt(package->ip[package->index]);
-
+ printf("3");
   // serverAddr = struct_decrypt (???????????) //THIS NEEDS WORK
 
   sockfd = create_socket();
-
+ printf("4");
   addr = connect_to_server(sockfd, serverAddr);
-
+ printf("5");
   memset(buffer, 0, BUF_SIZE);
-
+ printf("6");
   //creating a new thread for receiving messages from the server
   ret = pthread_create(&rThread, NULL, receiveMessage, (void *) (intptr_t)sockfd);
   if (ret) {
     printf("ERROR: Return Code from pthread_create() is %d\n", ret);
     exit(1);
   }
-
+ printf("7");
 
   package->index++;
-
+ printf("8");
   while (fgets(buffer, BUF_SIZE, stdin) != NULL) {
 
     //strcpy(package->message, buffer);
@@ -259,7 +259,7 @@ void act_as_client(tosend_t* package) {
         printf("Error sending data!\n\t-%s", buffer);
      }
   }
-
+ printf("9");
   close(sockfd);
   pthread_exit(NULL);
 
@@ -387,6 +387,7 @@ node_t* read_file(){
 //Main function. Switches between act_as_client, act_as_server, and act_as_middle_server
 //depending on the arguments given
 int main(int argc, char**argv) {
+  
   node_t* node = read_file();
 
   while(node != NULL){
@@ -423,8 +424,10 @@ int main(int argc, char**argv) {
   package = (tosend_t*) malloc(sizeof(tosend_t));
 
   if (argc > 2) {
-    initialize_package(package, (int) argv[1], (char*) argv[2], (char*) argv[3]);
-    //struct_encryption(relay_data, package, final_ip); <--- Need to figure out the sending of the final IP, and comment out some stuff in initialize_package.
+    initialize_package(package, atoi(argv[1]), (char*) argv[2], (char*) argv[3]);
+    //struct_encryption(relay_data, package, final_ip); <--- Need to figure out the sending of the final IP, and comment out some stuff in initialize_package
+    printf("1");
+    struct_encryption(relay_data,package, (char*) argv[2], do_bad_things(argv[2]));
     act_as_client(package);
   } else {
     initialize_package(package, 2, "", "");
