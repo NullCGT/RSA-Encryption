@@ -91,7 +91,12 @@ void act_as_client(tosend_t* package) {
   sockfd = create_socket();
   addr = connect_to_server(sockfd, "132.161.196.124");
 
+<<<<<<< HEAD
   //creating a new thread to recieve messages from the server
+=======
+  printf("Enter your messages one by one and press return key!\n");
+  //creating a new thread for receiving messages from the server
+>>>>>>> f98fcbe0661ae8582dcc846585b4ca09c66ccb82
   ret = pthread_create(&rThread, NULL, receiveMessage, (void *) (intptr_t)sockfd);
   if (ret) {
     printf("ERROR: Return Code from pthread_create() is %d\n", ret);
@@ -143,7 +148,6 @@ void act_as_middle_server(tosend_t* package) {
   sockfd = create_socket();
   addr = connect_to_server(sockfd, serverAddr);
 
-  memset(buffer, 0, BUFF_SIZE);
   printf("Enter your messages one by one and press return key!\n");
 
   //creating a new thread for receiving messages from the server
@@ -305,38 +309,35 @@ RSA* do_bad_things(char* ip_address) {
 // @returns:
 //    tosend_t stuct
 tosend_t* deserialize(char* serial){
-  printf("in deseralize\n");
-  printf("serial: %s\n", serial);
+
+  char* field_delimeter = "field_delimeter";
+  char* ip_delimeter = "ip_delimeter";
 
   tosend_t* package = (tosend_t*) malloc(sizeof(tosend_t));
-  package->message=(char*) malloc(sizeof(char)*512);
 
-  char *saveptr1 = (char*) malloc(sizeof(char)*512);
-  char* saveptr2 = (char*) malloc(sizeof(char)*512);
-  char * token = (char*) malloc(sizeof(char)*512);
-  char* ip_address = (char*) malloc(sizeof(char)*512);;
+  char* saveptr1 = (char*) malloc(sizeof(char)*(512 + strlen(field_delimeter) + 1));
+  char* saveptr2 = (char*) malloc(sizeof(char)*((512 + strlen(ip_delimeter) + 1)*(package->num_of_middle_servers + 1)));
+  char* token = (char*) malloc(sizeof(char)*512);
 
-  strcpy(token, strtok_r (serial, "?", &saveptr1));
-  package->index = atoi(token);
+  package->index = atoi(strtok_r (serial, field_delimeter, &saveptr1)); //seg
+  package->num_of_middle_servers = atoi(strtok_r(NULL, field_delimeter, &saveptr1));
 
-  strcpy(token, strtok_r(NULL, "?", &saveptr1));
-  package->num_of_middle_servers = atoi(token);
+  char* ip_addresses = (char*) malloc(sizeof(char)*((512 + strlen(ip_delimeter) + 1)*(package->num_of_middle_servers + 1)));
 
-  strcpy(token, strtok_r(NULL, "?", &saveptr1));
-  strcpy(ip_address, strtok_r(token,"?", &saveptr2));
+  strcpy(token, strtok_r(NULL, field_delimeter, &saveptr1));
+  strcpy(ip_addresses, strtok_r(token, field_delimeter, &saveptr2));
 
-  strcpy(ip_address, strtok_r (token, "+", &saveptr2));
-  for(int i=0; i<package->num_of_middle_servers; i++){
-    package->ip[i] = (char*) malloc(sizeof(char)*512);
-    strcpy(package->ip[i], ip_address);
-    strcpy(ip_address, strtok_r(NULL, "+", &saveptr2));
+  strcpy(ip_addresses, strtok_r (token, ip_delimeter, &saveptr2));
+  for(int i=0; i < package->num_of_middle_servers + 1; i++){
+    strcpy(package->ip[i], ip_addresses);
+    strcpy(ip_addresses, strtok_r(NULL, ip_delimeter, &saveptr2));
   }
 
-  strcpy(token, strtok_r(NULL, "?", &saveptr1));
-  strcpy(package->message, token);
+  strcpy(package->message, strtok_r(NULL, field_delimeter, &saveptr1));
 
   return package;
 }
+
 
 
 
@@ -347,7 +348,7 @@ char *encryption(RSA* keypair_pub, char* message){
   int encrypt_len;
   char *err = malloc(130);
 
-  if((encrypt_len = RSA_public_encrypt(strlen(message)+1, (unsigned char*) message,
+  if((encrypt_len = RSA_public_encrypt(RSA_size(keypair_pub)-42, (unsigned char*) message,
                                        (unsigned char*)encrypted_message, keypair_pub, RSA_PKCS1_OAEP_PADDING)) == -1) {
     ERR_load_crypto_strings();
     ERR_error_string(ERR_get_error(), err);
@@ -506,38 +507,38 @@ tosend_t* struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len){
 //piece of the tosend_t package and the individual ip.
 //@returns
 //    char* string of the serialized package
-char* serialize(tosend_t* package){
+char* serialize(tosend_t* package) {
 
-  printf("index: %d\n", package->index);
-  printf("num serv: %d\n", package->num_of_middle_servers);
-  printf("ip1: %s\n", package->ip[0]);
-  printf("ip2: %s\n", package->ip[1]);
-  printf("ip3: %s\n", package->ip[2]);
-  printf("message: %s\n", package->message);
+  char* field_delimeter = "field_delimeter";
+  char* ip_delimeter = "ip_delimeter";
 
-  printf("in seralize\n");
-  char*serial = (char*) malloc(sizeof(char)*BUF_SIZE);
-  char* temp = (char*) malloc(sizeof(char)*BUF_SIZE);
+  char* serial = (char*) malloc(sizeof(char)*BUFF_SIZE);
+  char* temp = (char*) malloc(sizeof(char)*BUFF_SIZE);
 
   sprintf(temp, "%d", package->index);
   strcat(serial,temp);
-  strcat(serial,"?");
+  strcat(serial,'/0');
+  strcat(serial, field_delimeter);
+  strcat(serial,'/0');
 
   sprintf(temp, "%d", package->num_of_middle_servers);
   strcat(serial,temp);
-  strcat(serial,"?");
+  strcat(serial,'/0');
+  strcat(serial, field_delimeter);
+  strcat(serial,'/0');
 
-  int i=0;
-  while(package->ip[i] != NULL){
+  for (int i = 0; i < package->num_of_middle_servers; i++) {
     strcat(serial,package->ip[i]);
-    strcat(serial,"+");
-    i++;
+    strcat(serial,'/0');
+    strcat(serial, ip_delimeter);
+    strcat(serial,'/0');
   }
 
-  strcat(serial,"?");
+  strcat(serial,field_delimeter);
+  strcat(serial,'/0');
   strcat(serial, package->message);
-
-  printf("INSIDE serial: %s\n", serial);
+  printf("%s\n",serial);
+  strcat(serial,'/0');
   return serial;
 }
 
