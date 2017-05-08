@@ -66,7 +66,6 @@ void initialize_package(tosend_t* package, int num_of_middle_servers, char* fina
 
   char* ips[100];
   encrypt(final_ip, ips, 100);
-
   for (int i = 0; i < num_of_middle_servers; i++) {
     package->ip[i] = ips[i];
   }
@@ -74,7 +73,7 @@ void initialize_package(tosend_t* package, int num_of_middle_servers, char* fina
 
 
 RSA* do_bad_things(char* ip_address) {
-  srand((unsigned int) ip_address);
+  srand(atoi(ip_address));
   RSA* keypair = RSA_generate_key(KEYBITS, 3, NULL, NULL);
   return keypair;
 }
@@ -199,7 +198,7 @@ void* receiveMessage(void* socket) {
   if (ret < 0) printf("Error receiving the message!\n");
   else {
     if (package->index >= package->num_of_middle_servers) fputs(package->message, stdout);
-    else act_as_server(package);
+    else act_as_middle_server(package);
   }
 }
 
@@ -329,49 +328,73 @@ void act_as_server(tosend_t* package) {
  return;
 }
 
-/**
+
 node_t* read_file(){
   FILE *ptr_file;
   char buf[1000];
   node_t* prev = NULL;
+  node_t* first = NULL;
   ptr_file =fopen("ip.txt", "r");
 
   if (!ptr_file)
     return NULL;
 
+  
   while (fgets(buf,1000, ptr_file)!=NULL){
+    
     node_t * cur = (node_t*) malloc(sizeof(node_t));
     cur->ip_address = buf;
+    cur->keypair_pub = do_bad_things(cur->ip_address);
     cur->next = prev;
-    prev = cur;
+    prev=cur;
   } 
-
   fclose(ptr_file);
-
   return prev;
 }
-*/
+
 
 
 int main(int argc, char**argv) {
 
-  /*
+  
   node_t* node = read_file();
   
   while(node != NULL){
     printf("%s", node->ip_address);
     node = node->next;
   }
- 
+  /*
+  while(node != NULL) {
+    BIO *private = BIO_new(BIO_s_mem());
+    BIO *public = BIO_new(BIO_s_mem());
+    PEM_write_bio_RSAPrivateKey(private, node->keypair_pub, NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_RSAPublicKey(public, node->keypair_pub);
+    size_t pri_len = BIO_pending(private);
+    size_t pub_len = BIO_pending(public);
+
+    char* pri_key = malloc(pri_len + 1);
+    char* pub_key = malloc(pub_len + 1);
+
+    BIO_read(private, pri_key, pri_len);
+    BIO_read(public, pub_key, pub_len);
+
+    pri_key[pri_len] = '\0';
+    pub_key[pub_len] = '\0';
+
+    printf("%s\n", pri_key);
+    printf("%s\n", pub_key);
+    node=node->next;
+  }
+  */
   OpenSSL_add_all_algorithms();
 
   node_t* relay_data;
-  */
   tosend_t* package;
   package = (tosend_t*) malloc(sizeof(tosend_t));
   
   if (argc > 2) {
     //initialize_package(package, (int) argv[1], (char*) argv[2], (char*) argv[3]);
+    //struct_encryption(relay_data, package, final_ip); <--- Need to figure out the sending of the final IP, and comment out some stuff in initialize_package.
     act_as_client(package); 
   } else {
     initialize_package(package, 2, "", "");
