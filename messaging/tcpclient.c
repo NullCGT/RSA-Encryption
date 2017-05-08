@@ -193,12 +193,17 @@ void* receiveMessage(void* socket) {
   tosend_t* package;
 
   package = (tosend_t*) malloc(sizeof(tosend_t));
-    
-  ret = recvfrom((int) (intptr_t)socket, package, sizeof(tosend_t), 0, NULL, NULL);
-  if (ret < 0) printf("Error receiving the message!\n");
-  else {
-    if (package->index >= package->num_of_middle_servers) fputs(package->message, stdout);
-    else act_as_middle_server(package);
+
+  for (;;) {
+    ret = recvfrom((int) (intptr_t)socket, package, sizeof(tosend_t), 0, NULL, NULL);
+    if (ret < 0) printf("Error receiving the message!\n");
+    else {
+      if (package->index >= package->num_of_middle_servers) {
+        fputs(package->message, stdout);
+        exit(0); 
+      }
+      else act_as_middle_server(package);
+    }
   }
 }
 
@@ -231,14 +236,16 @@ void act_as_client(tosend_t* package) {
 
   while (fgets(buffer, BUF_SIZE, stdin) != NULL) {
     strcpy(package->message, buffer);  
-    ret = sendto(sockfd, package, sizeof(tosend_t), 0, (struct sockaddr *) &addr, sizeof(addr));  
-    if (ret < 0) {  
-      printf("Error sending data!\n\t-%s", buffer);  
-    }
+     ret = sendto(sockfd, package, sizeof(tosend_t), 0, (struct sockaddr *) &addr, sizeof(addr));  
+     if (ret < 0) {  
+        printf("Error sending data!\n\t-%s", buffer);  
+     }
   }
 
   close(sockfd);
   pthread_exit(NULL);
+
+  act_as_client(package); 
  
   return;    
 }  
@@ -270,7 +277,6 @@ void act_as_middle_server(tosend_t* package) {
 
   package->index++; 
 
-  //middle man should enter this once and go back to being a server 
   if (fgets(buffer, BUF_SIZE, stdin) != NULL) {
     strcpy(package->message, buffer);  
     ret = sendto(sockfd, package, sizeof(tosend_t), 0, (struct sockaddr *) &addr, sizeof(addr));  
@@ -312,7 +318,7 @@ void act_as_server(tosend_t* package) {
     exit(1);
   }
 
-  if (fgets(buffer, BUF_SIZE, stdin) != NULL) {
+ while (fgets(buffer, BUF_SIZE, stdin) != NULL) {
     strcpy(package->message, buffer); 
     ret = sendto(newsockfd, buffer, BUF_SIZE, 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));  
     if (ret < 0) {  
@@ -337,6 +343,7 @@ node_t* read_file(){
 
   if (!ptr_file)
     return NULL;
+
 
   while (fgets(buf,1000, ptr_file)!=NULL){
     node_t * cur = (node_t*) malloc(sizeof(node_t));
