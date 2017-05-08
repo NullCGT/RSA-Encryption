@@ -220,14 +220,13 @@ void act_as_client(tosend_t* package) {
   int sockfd, ret;
   char buffer[BUF_SIZE];
   pthread_t rThread;
-  char* serverAddr = "132.161.196.111";
 
   char* my_ip = "this is where the ip would go.";
   RSA* server_keypair = do_bad_things(my_ip);
   struct_decryption(server_keypair, package, sizeof(server_keypair));
   
   sockfd = create_socket();
-  addr = connect_to_server(sockfd, serverAddr);
+  addr = connect_to_server(sockfd, "132.161.196.124");
   memset(buffer, 0, BUF_SIZE);
   //creating a new thread for receiving messages from the server
   ret = pthread_create(&rThread, NULL, receiveMessage, (void *) (intptr_t)sockfd);
