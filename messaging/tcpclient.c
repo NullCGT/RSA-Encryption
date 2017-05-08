@@ -19,7 +19,7 @@
 
 #define PORT 4444
 #define KEYBITS 4096
-#define BUFF_SIZE KEYBITS / 4
+#define BUFF_SIZE KEYBITS / 8
 #define ARBITRARY_MAX_RELAYS 100
 
 
@@ -145,31 +145,23 @@ char* serialize(tosend_t* package) {
   
   char* serial = (char*) malloc(sizeof(char)*BUFF_SIZE);
   char* temp = (char*) malloc(sizeof(char)*BUFF_SIZE);
-
+  
   sprintf(temp, "%d", package->index);
   strcat(serial,temp);
-  strcat(serial,'/0');
   strcat(serial, field_delimeter);
-  strcat(serial,'/0');
   
   sprintf(temp, "%d", package->num_of_middle_servers);
   strcat(serial,temp);
-  strcat(serial,'/0');
   strcat(serial, field_delimeter);
-  strcat(serial,'/0');
 
   for (int i = 0; i < package->num_of_middle_servers; i++) {
     strcat(serial,package->ip[i]);
-    strcat(serial,'/0');
     strcat(serial, ip_delimeter);
-    strcat(serial,'/0');
   }
   
   strcat(serial,field_delimeter);
-  strcat(serial,'/0');
   strcat(serial, package->message);
   printf("%s\n",serial);
-  strcat(serial,'/0');
   return serial;
 }
 
