@@ -44,8 +44,8 @@ char *encryption(RSA* keypair_pub, char* message);
 tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* sender_ip);
 bool struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len);
 int create_socket();
-void bind_me(struct sockaddr_in addr, int sockfd);
-void connect_to_server(struct sockaddr_in addr, int sockfd);
+void bind_me(int sockfd, char* ip);
+struct sockaddr_in connect_to_server(int sockfd, char* ip);
 int accept_connection(int sockfd, struct sockaddr_in cl_addr);
 void* receiveMessage(void* socket);
 void act_as_client(tosend_t* package);
@@ -133,7 +133,7 @@ char* decrypt(char* encrypted_IP) {
 
 int create_socket() {
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);  
-  if (sockfd < 0) {  
+  if (sockfd == -1) {  
     printf("Error creating socket!\n");  
     exit(1);  
   }  
@@ -142,7 +142,15 @@ int create_socket() {
   return sockfd; 
 }
 
-void bind_me(struct sockaddr_in addr, int sockfd) {
+void bind_me(int sockfd, char* ip) {
+  struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+
+  if (ip == NULL) addr.sin_addr.s_addr = INADDR_ANY;
+  else  addr.sin_addr.s_addr = inet_addr(ip);
+  addr.sin_port = PORT;
+  
   int ret = bind(sockfd, (struct sockaddr *) &addr, sizeof(addr));
   if (ret < 0) {
     printf("Error binding!\n");
@@ -151,13 +159,22 @@ void bind_me(struct sockaddr_in addr, int sockfd) {
   printf("Binding done...\n");
 }
 
-void connect_to_server(struct sockaddr_in addr, int sockfd) {
+struct sockaddr_in connect_to_server(int sockfd, char* ip) {
+  struct sockaddr_in addr;
+  
+  memset(&addr, 0, sizeof(addr));  
+  addr.sin_family = AF_INET;  
+  addr.sin_addr.s_addr = inet_addr(ip);
+  addr.sin_port = PORT;
+
   int ret = connect(sockfd, (struct sockaddr *) &addr, sizeof(addr));  
-  if (ret < 0) {  
+  if (ret == -1) {  
     printf("Error connecting to the server!\n");  
     exit(1);  
   }  
-  printf("Connected to the server...\n");  
+  printf("Connected to the server...\n");
+
+  return addr; 
 }
 
 int accept_connection(int sockfd, struct sockaddr_in cl_addr) {
@@ -186,25 +203,15 @@ void* receiveMessage(void* socket) {
 }
 
 void act_as_client(tosend_t* package) {
-  printf("Act_as Client has been called\n");
   struct sockaddr_in addr, cl_addr;  
   int sockfd, ret;  
   char buffer[BUF_SIZE]; 
   pthread_t rThread;
-  char* serverAddr;
+  char* serverAddr = "132.161.196.208";
 
-  serverAddr = decrypt(package->ip[package->index]);
+  //serverAddr = decrypt(package->ip[package->index]);
 
-  // serverAddr = struct_decrypt (???????????) //THIS NEEDS WORK
-  
-  sockfd = create_socket(); 
-
-  memset(&addr, 0, sizeof(addr));  
-  addr.sin_family = AF_INET;  
-  addr.sin_addr.s_addr = inet_addr(serverAddr);
-  addr.sin_port = PORT;     
-
-  connect_to_server(addr, sockfd); 
+  addr = connect_to_server(sockfd, serverAddr); 
 
   memset(buffer, 0, BUF_SIZE);
   printf("Enter your messages one by one and press return key!\n");
@@ -243,13 +250,7 @@ void act_as_server(tosend_t* package) {
   pthread_t rThread;
 
   sockfd = create_socket(); 
- 
-  memset(&addr, 0, sizeof(addr));
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = INADDR_ANY;
-  addr.sin_port = PORT;
- 
-  bind_me(addr, sockfd); 
+  bind_me(sockfd, NULL); 
 
   printf("Waiting for a connection...\n");
   listen(sockfd, 5); //start the listening in the socket
