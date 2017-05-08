@@ -53,6 +53,8 @@ void* receiveMessage(void* socket);
 void act_as_client(tosend_t* package);
 void act_as_server(tosend_t* package);
 void initialize_package(tosend_t* package, int num_middle_servers, char* final_ip, char* message);
+char* serialize(tosend_t* package);
+tosend_t* deserialize(char* serial);
 
 //Initialization of our package struct for cleanup
 void initialize_package(tosend_t* package, int num_of_middle_servers, char* final_ip, char* message) {
@@ -132,6 +134,73 @@ char* decrypt(char* encrypted_IP) {
   return encrypted_IP;
 }
 
+//Our serializer for the package struct to a single string, sperated by "?" to
+//send through sockets
+char* serialize(tosend_t* package){
+
+  char*serial = (char*) malloc(sizeof(char)*BUF_SIZE);
+  char* temp = (char*) malloc(sizeof(char)*BUF_SIZE);
+
+  sprintf(temp, "%d", package->index);
+  strcat(serial,temp);
+  strcat(serial,"?");
+
+  sprintf(temp, "%d", package->num_of_middle_servers);
+  strcat(serial,temp);
+  strcat(serial,"?");
+
+  int i=0;
+  while(package->ip[i] != NULL){
+    strcat(serial,package->ip[i]);
+    strcat(serial,"+");
+    i++;
+  }
+  
+  strcat(serial,"?");
+  strcat(serial, package->message);
+
+  return serial;
+}
+
+
+//Our deserializer for our serialized string recieved from the socket. deserializes
+//and turns it into a package struct
+tosend_t* deserialize(char* serial){
+
+  tosend_t* package = (tosend_t*) malloc(sizeof(tosend_t));
+  package->message=(char*) malloc(sizeof(char)*512);
+  
+  char *saveptr1 = (char*) malloc(sizeof(char)*512);
+  char* saveptr2 = (char*) malloc(sizeof(char)*512);
+  char * token = (char*) malloc(sizeof(char)*512);
+  char* ip_address = (char*) malloc(sizeof(char)*512);
+
+  strcpy(token, strtok_r (serial, "?", &saveptr1));
+  package->index = atoi(token);
+
+  strcpy(token, strtok_r(NULL, "?", &saveptr1));
+  package->num_of_middle_servers = atoi(token);
+
+  strcpy(token, strtok_r(NULL, "?", &saveptr1));
+  strcpy(ip_address, strtok_r(token,"?", &saveptr2));
+
+  
+  strcpy(ip_address, strtok_r (token, "+", &saveptr2));
+  for(int i=0; i<package->num_of_middle_servers; i++){
+    package->ip[i] = (char*) malloc(sizeof(char)*512);
+    strcpy(package->ip[i], ip_address);
+    strcpy(ip_address, strtok_r(NULL, "+", &saveptr2));
+  }
+
+
+  strcpy(token, strtok_r(NULL, "?", &saveptr1));
+  strcpy(package->message, token);
+
+  return package;
+}
+
+
+
 //Creates a socket. Sockfd= 0 if successfull, -1 on failure.
 int create_socket() {
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -198,12 +267,14 @@ void* receiveMessage(void* socket) {
 
   printf("cao");
   package = (tosend_t*) malloc(sizeof(tosend_t));
+  char* serializedPackage = (char*) malloc(sizeof(char*));
   printf("cao2");
 
   for (;;) {
-    ret = recvfrom((int) (intptr_t)socket, package, sizeof(tosend_t), 0, NULL, NULL);
+    ret = recvfrom((int) (intptr_t)socket, serializedPackage, sizeof(char*), 0, NULL, NULL);
     if (ret < 0) printf("Error receiving the message!\n");
     else {
+      package = deserialize(serializedPackage);
       if (package->index >= package->num_of_middle_servers) {
         fputs(package->message, stdout);
         exit(0);
@@ -236,10 +307,12 @@ void act_as_client(tosend_t* package) {
   }
 
   
-
+  char* serializedMessage = (char*) malloc(sizeof(char*));
+    
   while (fgets(buffer, BUF_SIZE, stdin) != NULL) {
     strcpy(package->message, buffer);
-    ret = sendto(sockfd, package, sizeof(tosend_t), 0, (struct sockaddr *) &addr, sizeof(addr));
+    serializedMessage = serialize(package);
+    ret = sendto(sockfd, serializedMessage, sizeof(char*), 0, (struct sockaddr*) &addr, sizeof(addr));
     if (ret < 0) {
       printf("Error sending data!\n\t-%s", buffer);
     }
