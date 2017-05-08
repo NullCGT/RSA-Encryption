@@ -121,7 +121,7 @@ tosend_t* struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len){
   int middle= package->num_of_middle_servers;
   //check this next line if errors.
   for (int i = package->index; i <=middle; i++) {
-    if(RSA_private_decrypt(encrypt_len-42, (unsigned char*)package->ip[middle-i], (unsigned char*)package->ip[middle-i], keypair, RSA_PKCS1_OAEP_PADDING) == -1) {
+    if(RSA_private_decrypt(encrypt_len, (unsigned char*)package->ip[middle-i], (unsigned char*)package->ip[middle-i], keypair, RSA_PKCS1_OAEP_PADDING) == -1) {
       ERR_load_crypto_strings();
       ERR_error_string(ERR_get_error(),err);
       fprintf(stderr,"Error decrypting message: %s\n", err);
