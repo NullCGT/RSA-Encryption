@@ -179,17 +179,17 @@ tosend_t* deserialize(char* serial){
 
   tosend_t* package = (tosend_t*) malloc(sizeof(tosend_t));
   
-  char* saveptr1 = (char*) malloc(sizeof(char)*512);
-  char* saveptr2 = (char*) malloc(sizeof(char)*512);
+  char* saveptr1 = (char*) malloc(sizeof(char)*(512 + strlen(field_delimeter) + 1));
+  char* saveptr2 = (char*) malloc(sizeof(char)*((512 + strlen(ip_delimeter) + 1)*(package->num_of_middle_servers + 1)));
   char* token = (char*) malloc(sizeof(char)*512);
 
-  strcpy(token, strtok_r (serial, field_delimeter, &saveptr1));
+  strcpy(token, strtok_r (serial, field_delimeter, &saveptr1)); //seg
   package->index = atoi(token);
 
   strcpy(token, strtok_r(NULL, field_delimeter, &saveptr1));
   package->num_of_middle_servers = atoi(token);
 
-  char* ip_addresses = (char*) malloc(sizeof(char)*512*(package->num_of_middle_servers+1));;
+  char* ip_addresses = (char*) malloc(sizeof(char)*((512 + strlen(ip_delimeter) + 1)*(package->num_of_middle_servers + 1)));
   
   strcpy(token, strtok_r(NULL, field_delimeter, &saveptr1));
   strcpy(ip_addresses, strtok_r(token, field_delimeter, &saveptr2));
