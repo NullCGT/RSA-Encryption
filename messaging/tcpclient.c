@@ -19,7 +19,7 @@
 
 #define PORT 4444
 #define KEYBITS 4096
-#define BUF_SIZE KEYBITS / 4
+#define BUFF_SIZE KEYBITS / 4
 #define ARBITRARY_MAX_RELAYS 100
 
 
@@ -69,7 +69,6 @@ int accept_connection(int sockfd, struct sockaddr_in cl_addr) {
   return newsockfd;
 }
 
-
 //The user runs as a client. Takes a package with the encripted ip adress, decrypts
 //it's own layer, and connects to the next node using that ip address. Once the
 //connection is established, it prompts the user for a message and then sends it
@@ -79,17 +78,18 @@ int accept_connection(int sockfd, struct sockaddr_in cl_addr) {
 void act_as_client(tosend_t* package) {
   struct sockaddr_in addr, cl_addr;
   int sockfd, ret;
-  char buffer[BUF_SIZE];
+  char* buffer;
+  char* serializedMessage;
+  char* my_ip;
   pthread_t rThread;
+  RSA* server_keypair;
 
-  //decrypts it's layer of the package
-  char* my_ip = "132.161.196.12";
-  RSA* server_keypair = do_bad_things(my_ip);
+  my_ip = "132.161.196.12";
+  server_keypair = do_bad_things(my_ip);
   //struct_decryption(server_keypair, package, sizeof(server_keypair));
 
   sockfd = create_socket();
   addr = connect_to_server(sockfd, "132.161.196.124");
-  memset(buffer, 0, BUF_SIZE);
 
   //creating a new thread to recieve messages from the server
   ret = pthread_create(&rThread, NULL, receiveMessage, (void *) (intptr_t)sockfd);
@@ -98,16 +98,15 @@ void act_as_client(tosend_t* package) {
     exit(1);
   }
 
-  char* serializedMessage = (char*) malloc(sizeof(char*));
-  while (fgets(buffer, BUF_SIZE, stdin) != NULL) {
+  buffer = (char*) malloc(sizeof(char)*BUFF_SIZE);
+  serializedMessage = (char*) malloc(sizeof(char)*BUFF_SIZE);
+
+  while (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package->message, buffer);
-    printf("pre seralize\n");
     strcpy(serializedMessage, serialize(package));
-    printf("post seralize\n");
-    printf("serial: %s\n", serializedMessage);
-    ret = sendto(sockfd, serializedMessage, sizeof(char*), 0, (struct sockaddr*) &addr, sizeof(addr));
+    ret = sendto(sockfd, serializedMessage, sizeof(char)*BUFF_SIZE, 0, (struct sockaddr*) &addr, sizeof(addr));
     if (ret < 0) {
-      printf("Error sending data!\n\t-%s", buffer);
+      printf("Error sending data!\n");
     }
   }
 
@@ -126,13 +125,15 @@ void act_as_middle_server(tosend_t* package) {
   printf("Act_as Client has been called\n");
   struct sockaddr_in addr, cl_addr;
   int sockfd, ret;
-  char buffer[BUF_SIZE];
-  pthread_t rThread;
+  char* buffer;
+  char* serializedMessage;
   char* serverAddr;
+  char* my_ip;
+  pthread_t rThread;
+  RSA* server_keypair;
 
-  //decrypts it's layer of the package
-  char* my_ip = "this is where the ip would go.";
-  RSA* server_keypair = do_bad_things(my_ip);
+  my_ip = "this is where the ip would go.";
+  server_keypair = do_bad_things(my_ip);
   struct_decryption(server_keypair, package, sizeof(server_keypair));
 
   serverAddr = (char*) malloc(sizeof(char)*512);
@@ -142,7 +143,7 @@ void act_as_middle_server(tosend_t* package) {
   sockfd = create_socket();
   addr = connect_to_server(sockfd, serverAddr);
 
-  memset(buffer, 0, BUF_SIZE);
+  memset(buffer, 0, BUFF_SIZE);
   printf("Enter your messages one by one and press return key!\n");
 
   //creating a new thread for receiving messages from the server
@@ -152,11 +153,15 @@ void act_as_middle_server(tosend_t* package) {
     exit(1);
   }
 
-  if (fgets(buffer, BUF_SIZE, stdin) != NULL) {
+  buffer = (char*) malloc(sizeof(char)*BUFF_SIZE);
+  serializedMessage = (char*) malloc(sizeof(char)*BUFF_SIZE);
+
+  if (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package->message, buffer);
-    ret = sendto(sockfd, package, sizeof(tosend_t), 0, (struct sockaddr *) &addr, sizeof(addr));
+    strcpy(serializedMessage, serialize(package));
+    ret = sendto(sockfd, serializedMessage, sizeof(char)*BUFF_SIZE, 0, (struct sockaddr*) &addr, sizeof(addr));
     if (ret < 0) {
-      printf("Error sending data!\n\t-%s", buffer);
+      printf("Error sending data!\n");
     }
   }
 
@@ -175,7 +180,8 @@ void act_as_server(tosend_t* package) {
 
   struct sockaddr_in cl_addr;
   int sockfd, newsockfd, ret;
-  char buffer[BUF_SIZE];
+  char* buffer;
+  char* serializedMessage;
   pid_t childpid;
   pthread_t rThread;
 
@@ -187,8 +193,6 @@ void act_as_server(tosend_t* package) {
   listen(sockfd, 5); //start the listening in the socket
 
   newsockfd = accept_connection(sockfd, cl_addr);
-
-  memset(buffer, 0, BUF_SIZE);
   printf("Enter your messages one by one and press return key!\n");
 
   //creating a new thread for receiving messages from the client
@@ -198,19 +202,29 @@ void act_as_server(tosend_t* package) {
     exit(1);
   }
 
- while (fgets(buffer, BUF_SIZE, stdin) != NULL) {
+  buffer = (char*) malloc(sizeof(char)*BUFF_SIZE);
+  serializedMessage = (char*) malloc(sizeof(char)*BUFF_SIZE);
+
+  while (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package->message, buffer);
-    ret = sendto(newsockfd, buffer, BUF_SIZE, 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));
+    strcpy(serializedMessage, serialize(package));
+    ret = sendto(sockfd, serializedMessage, sizeof(char)*BUFF_SIZE, 0, (struct sockaddr*) &cl_addr, sizeof(cl_addr));
     if (ret < 0) {
       printf("Error sending data!\n");
-      exit(1);
     }
- }
+  }
 
+<<<<<<< HEAD
  close(newsockfd);
  close(sockfd);
  pthread_exit(NULL);
 
+=======
+  close(newsockfd);
+  close(sockfd);
+  pthread_exit(NULL);
+
+>>>>>>> 402905d2f1bdcb62a3b07d7322814c8145156bbb
  return;
 }
 
@@ -485,7 +499,6 @@ tosend_t* struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len){
   package->index++;
   return package;
 }
-
 
 
 //Serializes tosend_t packages into a single string. This is required to send
