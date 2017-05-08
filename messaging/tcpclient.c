@@ -61,7 +61,8 @@ void encrypt(char* final_IP, char** ips, int len) {
 void initialize_package(tosend_t* package, int num_of_middle_servers, char* final_ip, char* message) {
   package->index = 0;
   package->num_of_middle_servers = num_of_middle_servers;
-  package->message; 
+  package->message = (char*) malloc(sizeof(char)*1000);
+  strcpy(package->message, message); 
 
   char* ips[100];
   encrypt(final_ip, ips, 100);
@@ -192,10 +193,13 @@ void* receiveMessage(void* socket) {
   int ret;
   tosend_t* package;
 
+  printf("cao");
   package = (tosend_t*) malloc(sizeof(tosend_t));
-
+  printf("cao2");
+  
   for (;;) {
     ret = recvfrom((int) (intptr_t)socket, package, sizeof(tosend_t), 0, NULL, NULL);
+    
     if (ret < 0) printf("Error receiving the message!\n");
     else {
       if (package->index >= package->num_of_middle_servers) {
@@ -223,7 +227,6 @@ void act_as_client(tosend_t* package) {
   addr = connect_to_server(sockfd, serverAddr); 
 
   memset(buffer, 0, BUF_SIZE);
-  printf("Enter your messages one by one and press return key!\n");
 
   //creating a new thread for receiving messages from the server
   ret = pthread_create(&rThread, NULL, receiveMessage, (void *) (intptr_t)sockfd);
@@ -232,11 +235,13 @@ void act_as_client(tosend_t* package) {
     exit(1);
   }
 
+  
   package->index++; 
 
   while (fgets(buffer, BUF_SIZE, stdin) != NULL) {
-    strcpy(package->message, buffer);  
-     ret = sendto(sockfd, package, sizeof(tosend_t), 0, (struct sockaddr *) &addr, sizeof(addr));  
+
+    //strcpy(package->message, buffer);
+     ret = sendto(sockfd, package, sizeof(tosend_t), 0, (struct sockaddr *) &addr, sizeof(addr));
      if (ret < 0) {  
         printf("Error sending data!\n\t-%s", buffer);  
      }
