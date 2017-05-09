@@ -87,12 +87,12 @@ void act_as_client(tosend_t package) {
   pthread_t rThread;
   RSA* server_keypair;
 
-  my_ip = "132.161.196.12";
+  my_ip = "132.161.196.61";
   server_keypair = do_bad_things(my_ip);
   //struct_decryption(server_keypair, package, sizeof(server_keypair));
 
   sockfd = create_socket();
-  addr = connect_to_server(sockfd, "132.161.196.124");
+  addr = connect_to_server(sockfd, "132.161.196.74");
 
   printf("Enter your messages one by one and press return key!\n");
   //creating a new thread for receiving messages from the server
@@ -105,7 +105,9 @@ void act_as_client(tosend_t package) {
   buffer = (char*) malloc(sizeof(char)*BUFF_SIZE);
   // serializedMessage = (char*) malloc(sizeof(char)*BUFF_SIZE);
 
+  package.message = (char*) malloc(1000);
   while (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
+    printf("%d\n",sizeof(buffer));
     strcpy(package.message, buffer);
     //strcpy(serializedMessage, serialize(package));
     ret = sendto(sockfd, &package, sizeof(package), 0, (struct sockaddr*) &addr, sizeof(addr));
@@ -158,7 +160,9 @@ void act_as_middle_server(tosend_t package) {
 
   buffer = (char*) malloc(sizeof(char)*BUFF_SIZE);
   //serializedMessage = (char*) malloc(sizeof(char)*BUFF_SIZE);
+  package.message = (char*) malloc(1000);
 
+  
   if (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package.message, buffer);
     //strcpy(serializedMessage, serialize(package));
