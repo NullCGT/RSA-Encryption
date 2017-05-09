@@ -39,7 +39,6 @@ void bind_me(int sockfd, char* ip) {
   printf("Binding done...\n");
 }
 
-
 int create_socket() {
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd == -1) {
@@ -49,7 +48,6 @@ int create_socket() {
 
   return sockfd;
 }
-
 
 struct sockaddr_in connect_to_server(int sockfd, char* ip) {
   struct sockaddr_in addr;
