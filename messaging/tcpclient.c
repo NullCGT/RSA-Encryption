@@ -143,6 +143,7 @@ void act_as_middle_server(tosend_t package) {
   // struct_decryption(server_keypair, package, sizeof(server_keypair));
 
   serverAddr = (char*) malloc(sizeof(char)*BUFF_SIZE);
+  printf("\n%d\n",sizeof(package.ip[package.index]));
   strcpy(serverAddr, package.ip[package.index]);
 
   //connects to the next node
