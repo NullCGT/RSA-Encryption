@@ -144,7 +144,7 @@ void act_as_middle_server(tosend_t package) {
 
   serverAddr = (char*) malloc(sizeof(char)*BUFF_SIZE);
   printf("\n%d\n",sizeof(package.ip[package.index]));
-  printf("Package index: %d\n", index);
+  printf("Package index: %d\n", package.index);
   strcpy(serverAddr, package.ip[package.index]);
 
   //connects to the next node
@@ -371,7 +371,6 @@ void initialize_package(tosend_t package, int num_of_middle_servers, char* final
 
   for(int i = 0; i < ARBITRARY_MAX_RELAYS; i++) {
     package.ip[i] = (char*)malloc(sizeof(char)*(BUFF_SIZE + 1));
-    package.ip[i] = NULL;
   }
 
   package.message = (char*) malloc(sizeof(char)*1000);
