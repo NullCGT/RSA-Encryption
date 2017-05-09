@@ -61,7 +61,7 @@ void act_as_client(tosend_t package) {
 
   while (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package.message, buffer);
-    ret = sendto(sockfd, &package, sizeof(package), 0, (struct sockaddr*) &addr, sizeof(addr));
+    ret = sendto(sockfd, (tosend_t *)&package,(1024+ sizeof(package)), 0, (struct sockaddr*) &addr, sizeof(addr));
     if (ret < 0) {
       printf("Error sending data!\n");
     }
@@ -110,7 +110,7 @@ void act_as_middle_server(tosend_t package) {
 
   if (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package.message, buffer);
-    ret = sendto(sockfd, &package, sizeof(package), 0, (struct sockaddr*) &addr, sizeof(addr));
+    ret = sendto(sockfd, (tosend_t*)&package, (1024+sizeof(package)), 0, (struct sockaddr*) &addr, sizeof(addr));
     if (ret < 0) {
       printf("Error sending data!\n");
     }
@@ -157,7 +157,7 @@ void act_as_server(tosend_t package) {
 
   while (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package.message, buffer);
-    ret = sendto(sockfd, &package, sizeof(package), 0, (struct sockaddr*) &cl_addr, sizeof(cl_addr));
+    ret = sendto(sockfd, (tosend_t*)&package, (1024+sizeof(package)), 0, (struct sockaddr*) &cl_addr, sizeof(cl_addr));
     if (ret < 0) {
       printf("Error sending data!\n");
     }
@@ -186,14 +186,14 @@ void initialize_package(tosend_t package, int num_of_middle_servers, char* final
 //   void
 void* receiveMessage(void* socket) {
   int ret;
-  tosend_t package;
+  tosend_t *package=malloc(sizeof(tosend_t));
   
   for (;;) {
-    ret = recvfrom((int) (intptr_t)socket, &package, sizeof(package), 0, NULL, NULL);
+    ret = recvfrom((int) (intptr_t)socket, package, sizeof(*package), 0, NULL, NULL);
     if (ret < 0) printf("Error receiving the message!\n");
     else {
-      if (package.index >= package.num_of_middle_servers) fputs(package.message, stdout);
-      else act_as_middle_server(package);
+      if (package->index >= package->num_of_middle_servers) fputs(package->message, stdout);
+      else act_as_middle_server(*package);
     }
   }
 }
