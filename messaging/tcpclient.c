@@ -87,12 +87,12 @@ void act_as_client(tosend_t package) {
   pthread_t rThread;
   RSA* server_keypair;
 
-  my_ip = "132.161.196.61";
+  my_ip = "132.161.196.208";
   server_keypair = do_bad_things(my_ip);
-  struct_decryption(server_keypair, package, sizeof(server_keypair));
+  //struct_decryption(server_keypair, package, sizeof(server_keypair));
 
   sockfd = create_socket();
-  addr = connect_to_server(sockfd, "132.161.196.74");
+  addr = connect_to_server(sockfd, "132.161.196.61");
 
   printf("Enter your messages one by one and press return key!\n");
   //creating a new thread for receiving messages from the server
@@ -140,9 +140,9 @@ void act_as_middle_server(tosend_t package) {
 
   my_ip = "this is where the ip would go.";
   server_keypair = do_bad_things(my_ip);
-  struct_decryption(server_keypair, package, sizeof(server_keypair));
+  // struct_decryption(server_keypair, package, sizeof(server_keypair));
 
-  serverAddr = (char*) malloc(sizeof(char)*BUFF_SIZE);
+  serverAddr = (char*) malloc(sizeof(char)*20);
   printf("\n%d\n",sizeof(package.ip[package.index]));
   printf("Package index: %d\n", package.index);
   strcpy(serverAddr, package.ip[package.index]);
@@ -291,11 +291,6 @@ struct sockaddr_in connect_to_server(int sockfd, char* ip) {
 
 
 
-//a mockup decrypt function for testing purposes
-char* decrypt(char* encrypted_IP) {
-  return encrypted_IP;
-}
-
 //An RSA generator created on bad practice
 RSA* do_bad_things(char* ip_address) {
   //srand(atoi(ip_address));
@@ -367,7 +362,7 @@ char *encryption(RSA* keypair_pub, char* message){
 //   void
 void initialize_package(tosend_t package, int num_of_middle_servers, char* final_ip, char* message) {
   package.index = 0;
-  package.num_of_middle_servers = num_of_middle_servers;
+  package.num_of_middle_servers =0; //num_of_middle_servers;
 
   for(int i = 0; i < ARBITRARY_MAX_RELAYS; i++) {
     package.ip[i] = (char*)malloc(sizeof(char)*(BUFF_SIZE + 1));
@@ -435,14 +430,18 @@ void* receiveMessage(void* socket) {
     ret = recvfrom((int) (intptr_t)socket, &package, sizeof(package), 0, NULL, NULL);
     if (ret < 0) printf("Error receiving the message!\n");
     else {
-      printf("before deseralize\n");
+      //printf("before deseralize\n");
       //package = deserialize(serializedPackage);
-      printf("after deseralize\n");
-      if (package.index >= package.num_of_middle_servers) {
-        fputs(package.message, stdout);
-        exit(0);
-      }
-      else act_as_middle_server(package);
+      //printf("after deseralize\n");
+      //if (package.index >= package.num_of_middle_servers) {
+      
+      printf("got a message!\n");
+      printf("index: %d\n", package.index);
+      printf("midservs: %d\n", package.num_of_middle_servers);
+      printf("%s\n",package.message);
+      exit(0);
+        // }
+        // else act_as_middle_server(package);
     }
   }
 }
@@ -565,7 +564,7 @@ int main(int argc, char**argv) {
   if (argc > 2) {
     relay_data = initialize_ip_keys();
     initialize_package(package, atoi(argv[1]), (char*) argv[2], (char*) argv[3]);
-    struct_encryption(relay_data,package, (char*) argv[2], do_bad_things(argv[2]));
+    // struct_encryption(relay_data,package, (char*) argv[2], do_bad_things(argv[2]));
     act_as_client(package);
   } else {
     initialize_package(package, 2, "", "");
