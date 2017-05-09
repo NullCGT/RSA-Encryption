@@ -138,7 +138,7 @@ void act_as_middle_server(tosend_t package) {
 
   my_ip = "this is where the ip would go.";
   server_keypair = do_bad_things(my_ip);
-  struct_decryption(server_keypair, package, sizeof(server_keypair));
+  // struct_decryption(server_keypair, package, sizeof(server_keypair));
 
   serverAddr = (char*) malloc(sizeof(char)*BUFF_SIZE);
   strcpy(serverAddr, package.ip[package.index]);
@@ -475,7 +475,7 @@ node_t* read_file(){
 tosend_t struct_encryption(node_t* relay_data, tosend_t package, char* final_ip, RSA* pub_for_final) {
   // For now this will all be using the same keypair, because we don't have a layout for multiple keys yet.
   int counter = 1;
-  strcpy(package.ip[0], encryption(pub_for_final,final_ip));
+  strncpy(package.ip[0], encryption(pub_for_final,final_ip),BUFF_SIZE+1);
 
   while (relay_data != NULL) {
     strcpy(package.ip[counter], relay_data->ip_address);
@@ -558,7 +558,7 @@ int main(int argc, char**argv) {
   if (argc > 2) {
     relay_data = initialize_ip_keys();
     initialize_package(package, atoi(argv[1]), (char*) argv[2], (char*) argv[3]);
-    struct_encryption(relay_data,package, (char*) argv[2], do_bad_things(argv[2]));
+    // struct_encryption(relay_data,package, (char*) argv[2], do_bad_things(argv[2]));
     act_as_client(package);
   } else {
     initialize_package(package, 2, "", "");
