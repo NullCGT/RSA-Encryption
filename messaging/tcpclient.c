@@ -480,7 +480,7 @@ tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* final_i
   while (relay_data != NULL) {
     strcpy(package->ip[counter], relay_data->ip_address);
     counter++;
-    for (int i = 0; i < counter; i++) {
+    for (int i = 0; i < counter-1; i++) {
       strcpy(package->ip[i], encryption(relay_data->keypair_pub, package->ip[i]));
    }
    relay_data = relay_data->next;
