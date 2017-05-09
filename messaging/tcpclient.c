@@ -140,7 +140,7 @@ void act_as_middle_server(tosend_t* package) {
   server_keypair = do_bad_things(my_ip);
   struct_decryption(server_keypair, package, sizeof(server_keypair));
 
-  serverAddr = (char*) malloc(sizeof(char)*512);
+  serverAddr = (char*) malloc(sizeof(char)*BUFF_SIZE);
   strcpy(serverAddr, package->ip[package->index]);
 
   //connects to the next node
@@ -309,14 +309,14 @@ tosend_t* deserialize(char* serial){
 
   tosend_t* package = (tosend_t*) malloc(sizeof(tosend_t));
   
-  char* saveptr1 = (char*) malloc(sizeof(char)*(512 + strlen(field_delimeter) + 1));
-  char* saveptr2 = (char*) malloc(sizeof(char)*((512 + strlen(ip_delimeter) + 1)*(package->num_of_middle_servers + 1)));
-  char* token = (char*) malloc(sizeof(char)*512);
+  char* saveptr1 = (char*) malloc(sizeof(char)*(BUFF_SIZE + strlen(field_delimeter) + 1));
+  char* saveptr2 = (char*) malloc(sizeof(char)*((BUFF_SIZE + strlen(ip_delimeter) + 1)*(package->num_of_middle_servers + 1)));
+  char* token = (char*) malloc(sizeof(char)*BUFF_SIZE);
 
   package->index = atoi(strtok_r (serial, field_delimeter, &saveptr1)); //seg
   package->num_of_middle_servers = atoi(strtok_r(NULL, field_delimeter, &saveptr1));
 
-  char* ip_addresses = (char*) malloc(sizeof(char)*((512 + strlen(ip_delimeter) + 1)*(package->num_of_middle_servers + 1)));
+  char* ip_addresses = (char*) malloc(sizeof(char)*((BUFF_SIZE + strlen(ip_delimeter) + 1)*(package->num_of_middle_servers + 1)));
   
   strcpy(token, strtok_r(NULL, field_delimeter, &saveptr1));
   strcpy(ip_addresses, strtok_r(token, field_delimeter, &saveptr2));
@@ -364,7 +364,7 @@ void initialize_package(tosend_t* package, int num_of_middle_servers, char* fina
   package->num_of_middle_servers = num_of_middle_servers;
 
   for(int i = 0; i < ARBITRARY_MAX_RELAYS; i++)
-    package->ip[i] = (char*)malloc(sizeof(char)*513);
+    package->ip[i] = (char*)malloc(sizeof(char)*(BUFF_SIZE + 1));
 
   package->message = (char*) malloc(sizeof(char)*1000);
   message = "Welcome to our chat!"; //DUMMY MESSAGE;
