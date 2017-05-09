@@ -89,7 +89,7 @@ void act_as_client(tosend_t package) {
 
   my_ip = "132.161.196.61";
   server_keypair = do_bad_things(my_ip);
-  //struct_decryption(server_keypair, package, sizeof(server_keypair));
+  struct_decryption(server_keypair, package, sizeof(server_keypair));
 
   sockfd = create_socket();
   addr = connect_to_server(sockfd, "132.161.196.74");
@@ -140,7 +140,7 @@ void act_as_middle_server(tosend_t package) {
 
   my_ip = "this is where the ip would go.";
   server_keypair = do_bad_things(my_ip);
-  // struct_decryption(server_keypair, package, sizeof(server_keypair));
+  struct_decryption(server_keypair, package, sizeof(server_keypair));
 
   serverAddr = (char*) malloc(sizeof(char)*BUFF_SIZE);
   printf("\n%d\n",sizeof(package.ip[package.index]));
@@ -565,7 +565,7 @@ int main(int argc, char**argv) {
   if (argc > 2) {
     relay_data = initialize_ip_keys();
     initialize_package(package, atoi(argv[1]), (char*) argv[2], (char*) argv[3]);
-    // struct_encryption(relay_data,package, (char*) argv[2], do_bad_things(argv[2]));
+    struct_encryption(relay_data,package, (char*) argv[2], do_bad_things(argv[2]));
     act_as_client(package);
   } else {
     initialize_package(package, 2, "", "");
