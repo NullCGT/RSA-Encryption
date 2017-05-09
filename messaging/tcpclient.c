@@ -24,7 +24,7 @@ void act_as_client (tosend_t package);
 void act_as_middle_server (tosend_t package);
 void act_as_server (tosend_t package);
 void initialize_package(tosend_t* package, int num_middle_servers, char* final_ip);
-void* receiveMessage(void* socket); 
+void* receiveMessage(void* socket);
 
 //The user runs as a client. Takes a package with the encripted ip adress, decrypts
 //it's own layer, and connects to the next node using that ip address. Once the
@@ -45,7 +45,7 @@ void act_as_client(tosend_t package) {
   printf("%s\n",package.ip[package.index]);
   serverAddr = (char*) malloc(sizeof(char)*16);
   strcpy(serverAddr, package.ip[package.index]);
-  
+
   sockfd = create_socket();
   addr = connect_to_server(sockfd, serverAddr);
 
@@ -108,6 +108,7 @@ void act_as_middle_server(tosend_t package) {
 
   buffer = (char*) malloc(sizeof(char)*BUFF_SIZE);
 
+  //shouldn't be askign for this tbh
   if (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package.message, buffer);
     ret = sendto(sockfd, (tosend_t*)&package, (1024+sizeof(package)), 0, (struct sockaddr*) &addr, sizeof(addr));
@@ -152,6 +153,8 @@ void act_as_server(tosend_t package) {
     printf("ERROR: Return Code from pthread_create() is %d\n", ret);
     exit(1);
   }
+  //we aren't getting the package back. so we aren't making sure the changes in
+  //recieve message are saving
 
   buffer = (char*) malloc(sizeof(char)*BUFF_SIZE);
 
@@ -187,9 +190,13 @@ void initialize_package(tosend_t *package, int num_of_middle_servers, char* fina
 void* receiveMessage(void* socket) {
   int ret;
   tosend_t *package=malloc(sizeof(tosend_t));
-  
+
   for (;;) {
     ret = recvfrom((int) (intptr_t)socket, package, sizeof(*package), 0, NULL, NULL);
+    printf("index: %s\n", package->index);
+    printf("num: %s\n", package->num_of_middle_servers);
+    printf("ip[0]: %s\n", package->ip[0]);
+    printf("message: %s\n", package->message);
     if (ret < 0) printf("Error receiving the message!\n");
     else {
       if (package->index >= package->num_of_middle_servers) fputs(package->message, stdout);
