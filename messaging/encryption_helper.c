@@ -56,7 +56,7 @@ tosend_t struct_decryption(RSA* keypair, tosend_t package, int encrypt_len){
   char *decrypted_message = malloc(RSA_size(keypair));
   char *err = malloc(130);
   
-  for (int i = package.index; i <= package.num_of_middle_servers; i++) {
+  for (int i = package.index; i < package.num_of_middle_servers; i++) {
     if(RSA_private_decrypt(encrypt_len,
                             (unsigned char*)package.ip[i],
                             (unsigned char*)package.ip[i],

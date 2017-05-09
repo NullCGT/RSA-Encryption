@@ -42,7 +42,7 @@ void act_as_client(tosend_t package) {
 
   server_keypair = do_bad_things(NULL);
   struct_decryption(server_keypair, package, sizeof(server_keypair));
-
+  printf("%s\n",package.ip[package.index]);
   serverAddr = (char*) malloc(sizeof(char)*16);
   strcpy(serverAddr, package.ip[package.index]);
   
