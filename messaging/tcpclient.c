@@ -179,6 +179,8 @@ void act_as_middle_server(tosend_t* package) {
 //Turns our program into the end server. It waits for a connection to be made, waits
 //to recieve a message, decrypts the message, and displays the message to the
 //user
+//@returns
+//   void
 void act_as_server(tosend_t* package) {
 
   struct sockaddr_in cl_addr;
@@ -298,8 +300,8 @@ RSA* do_bad_things(char* ip_address) {
 
 //Deserializes the inputted string. Splits each tosend_t section with a dilimter
 //character, and splits ip addresses with the '+' character.
-// @returns:
-//    tosend_t stuct
+//@returns:
+//    tosend_t struct
 tosend_t* deserialize(char* serial){
 
   char* field_delimeter = "field_delimeter";
@@ -334,6 +336,8 @@ tosend_t* deserialize(char* serial){
 
 
 //Enrypts our message using our RSA token
+//@returns
+//   char*
 char *encryption(RSA* keypair_pub, char* message){
   printf("encrypting!\n");
   char *encrypted_message = malloc(RSA_size(keypair_pub));
@@ -353,6 +357,8 @@ char *encryption(RSA* keypair_pub, char* message){
 
 
 //Initialization of our package struct for cleanup
+//@returns
+//   void
 void initialize_package(tosend_t* package, int num_of_middle_servers, char* final_ip, char* message) {
   package->index = 0;
   package->num_of_middle_servers = num_of_middle_servers;
@@ -365,7 +371,9 @@ void initialize_package(tosend_t* package, int num_of_middle_servers, char* fina
   strcpy(package->message, message);
 }
 
-
+//Initializes a linked list containing ip addresses and RSA keys
+//@returns
+//   node_t*
 node_t* initialize_ip_keys() {
 
   node_t* node = read_file();
@@ -406,7 +414,7 @@ node_t* initialize_ip_keys() {
 //deserializes the package and prints the message to the user. Otherwise, runs
 //act_as_middle_server.
 //@returns
-//  void
+//   void
 void* receiveMessage(void* socket) {
   int ret;
   tosend_t* package;
@@ -434,6 +442,8 @@ void* receiveMessage(void* socket) {
 
 
 //Reads a list of IP addresses from file
+//@returns
+//   node_t*
 node_t* read_file(){
   FILE *ptr_file;
   char buf[20];
@@ -460,6 +470,8 @@ node_t* read_file(){
 
 //Handles the encription of our package. Encrypts the IP adddresses in multiple
 //layers
+//@returns
+//   tosend_t*
 tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* final_ip, RSA* pub_for_final) {
   // For now this will all be using the same keypair, because we don't have a layout for multiple keys yet.
   int counter = 1;
@@ -477,6 +489,10 @@ tosend_t* struct_encryption(node_t* relay_data, tosend_t* package, char* final_i
   return package;
 }
 
+
+//Handles the decryption of our package. Decrypts one entire layer of IP addresses.
+//@returns
+//   tosend_t*
 tosend_t* struct_decryption(RSA* keypair, tosend_t* package, int encrypt_len){
   char *decrypted_message = malloc(RSA_size(keypair));
   char *err = malloc(130);
