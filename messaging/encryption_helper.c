@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-
 #include "structs.h"
 
 //An RSA generator created on bad practice
