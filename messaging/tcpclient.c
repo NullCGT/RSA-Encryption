@@ -41,7 +41,7 @@ void act_as_client(tosend_t package) {
   char* serverAddr;
 
   server_keypair = do_bad_things(NULL);
-  struct_decryption(server_keypair, package, sizeof(server_keypair));
+  //struct_decryption(server_keypair, package, sizeof(server_keypair));
   printf("%s\n",package.ip[package.index]);
   serverAddr = (char*) malloc(sizeof(char)*16);
   strcpy(serverAddr, package.ip[package.index]);
@@ -88,7 +88,7 @@ void act_as_middle_server(tosend_t package) {
   RSA* server_keypair;
 
   server_keypair = do_bad_things(NULL);
-  struct_decryption(server_keypair, package, sizeof(server_keypair));
+  //struct_decryption(server_keypair, package, sizeof(server_keypair));
 
   serverAddr = (char*) malloc(sizeof(char)*16);
   strcpy(serverAddr, package.ip[package.index]);
@@ -108,7 +108,7 @@ void act_as_middle_server(tosend_t package) {
 
   buffer = (char*) malloc(sizeof(char)*BUFF_SIZE);
 
-  //shouldn't be askign for this tbh
+  //
   if (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package.message, buffer);
     ret = sendto(sockfd, (tosend_t*)&package, (1024+sizeof(package)), 0, (struct sockaddr*) &addr, sizeof(addr));
