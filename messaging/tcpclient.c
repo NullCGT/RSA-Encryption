@@ -20,12 +20,6 @@
 //http://www.theinsanetechie.in/2014/01/a-simple-chat-program-in-c-tcp.html
 //https://shanetully.com/2012/04/simple-public-key-encryption-with-rsa-and-opensll/
 
-
-typedef struct args {
-  void* socket;
-  struct sockaddr_in cl_addr;
-} args_t;
-
 void act_as_client (tosend_t package);
 void act_as_middle_server (tosend_t package);
 void act_as_server (tosend_t package);
@@ -152,14 +146,9 @@ void act_as_server(tosend_t package) {
 
   newsockfd = accept_connection(sockfd, cl_addr);
   printf("Enter your messages one by one and press return key!\n");
-
-  args_t* ar;
-  ar = (args_t*) malloc(sizeof(args_t));
-  ar->socket = (void*)(intptr_t)newsockfd;
-  ar->cl_addr = cl_addr;
     
   //creating a new thread for receiving messages from the client
-    ret = pthread_create(&rThread, NULL, receiveMessage, (void*)&ar);
+  ret = pthread_create(&rThread, NULL, receiveMessage, (void*)(intptr_t)sockfd);
   if (ret) {
     printf("ERROR: Return Code from pthread_create() is %d\n", ret);
     exit(1);
@@ -198,13 +187,12 @@ void initialize_package(tosend_t* package, int num_of_middle_servers, char* fina
 //act_as_middle_server.
 //@returns
 //   void
-void* receiveMessage(void* args) {
+void* receiveMessage(void* socket) {
   int ret;
   tosend_t *package=malloc(sizeof(tosend_t));
 
   for (;;) {
-    int ad_len = sizeof(((args_t*)args)->cl_addr);
-    ret = recvfrom((int) (intptr_t)((args_t*)args)->socket, package, sizeof(*package), 0, (struct sockaddr*) &((args_t*)args)->cl_addr, &ad_len);
+    ret = recvfrom((int) (intptr_t)socket, package, sizeof(*package), 0, NULL, NULL); 
     printf("index: %d\n", package->index);
     printf("num: %d\n", package->num_of_middle_servers);
     printf("ip[0]: %s\n", package->ip[0]);
