@@ -79,7 +79,6 @@ void act_as_client(tosend_t package) {
 //@returns
 //    void
 void act_as_middle_server(tosend_t package) {
-  printf("Act_as Client has been called\n");
   struct sockaddr_in addr, cl_addr;
   int sockfd, ret;
   char* buffer;
@@ -130,7 +129,6 @@ void act_as_middle_server(tosend_t package) {
 //@returns
 //   void
 void act_as_server(tosend_t package) {
-
   struct sockaddr_in cl_addr;
   int sockfd, newsockfd, ret;
   char* buffer;
@@ -193,11 +191,6 @@ void* receiveMessage(void* socket) {
 
   for (;;) {
     ret = recvfrom((int) (intptr_t)socket, package, sizeof(*package), 0, NULL, NULL); 
-    printf("index: %d\n", package->index);
-    printf("num: %d\n", package->num_of_middle_servers);
-    printf("ip[0]: %s\n", package->ip[0]);
-    printf("message: %s\n", package->message);
-    if (ret < 0) printf("Error receiving the message!\n");
     else {
       if (package->index >= package->num_of_middle_servers) fputs(package->message, stdout);
       else act_as_middle_server(*package);
