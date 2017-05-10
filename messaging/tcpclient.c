@@ -23,8 +23,8 @@
 void act_as_client (tosend_t package);
 void act_as_middle_server (tosend_t package);
 void act_as_server (tosend_t package);
-void initialize_package(tosend_t *package, int num_middle_servers, char* final_ip);
-void* receiveMessage(void* socket); 
+void initialize_package(tosend_t* package, int num_middle_servers, char* final_ip);
+void* receiveMessage(void* socket);
 
 //The user runs as a client. Takes a package with the encripted ip adress, decrypts
 //it's own layer, and connects to the next node using that ip address. Once the
@@ -39,13 +39,14 @@ void act_as_client(tosend_t package) {
   pthread_t rThread;
   RSA* server_keypair;
   char* serverAddr;
-  
+
   server_keypair = do_bad_things(NULL);
   printf("%s\n",package.ip[package.index]);
   struct_decryption(server_keypair, package, sizeof(server_keypair));
+
   serverAddr = (char*) malloc(sizeof(char)*16);
   strcpy(serverAddr, package.ip[package.index]);
-  
+
   sockfd = create_socket();
   addr = connect_to_server(sockfd, serverAddr);
 
@@ -61,7 +62,7 @@ void act_as_client(tosend_t package) {
 
   while (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package.message, buffer);
-    ret = sendto(sockfd, &package, sizeof(package), 0, (struct sockaddr*) &addr, sizeof(addr));
+    ret = sendto(sockfd, (tosend_t *)&package,(1024+ sizeof(package)), 0, (struct sockaddr*) &addr, sizeof(addr));
     if (ret < 0) {
       printf("Error sending data!\n");
     }
@@ -79,7 +80,6 @@ void act_as_client(tosend_t package) {
 //@returns
 //    void
 void act_as_middle_server(tosend_t package) {
-  printf("Act_as Client has been called\n");
   struct sockaddr_in addr, cl_addr;
   int sockfd, ret;
   char* buffer;
@@ -88,7 +88,7 @@ void act_as_middle_server(tosend_t package) {
   RSA* server_keypair;
 
   server_keypair = do_bad_things(NULL);
-  struct_decryption(server_keypair, package, sizeof(server_keypair));
+  //struct_decryption(server_keypair, package, sizeof(server_keypair));
 
   serverAddr = (char*) malloc(sizeof(char)*16);
   strcpy(serverAddr, package.ip[package.index]);
@@ -108,9 +108,10 @@ void act_as_middle_server(tosend_t package) {
 
   buffer = (char*) malloc(sizeof(char)*BUFF_SIZE);
 
+  //
   if (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package.message, buffer);
-    ret = sendto(sockfd, &package, sizeof(package), 0, (struct sockaddr*) &addr, sizeof(addr));
+    ret = sendto(sockfd, (tosend_t*)&package, (1024+sizeof(package)), 0, (struct sockaddr*) &addr, sizeof(addr));
     if (ret < 0) {
       printf("Error sending data!\n");
     }
@@ -129,7 +130,6 @@ void act_as_middle_server(tosend_t package) {
 //@returns
 //   void
 void act_as_server(tosend_t package) {
-
   struct sockaddr_in cl_addr;
   int sockfd, newsockfd, ret;
   char* buffer;
@@ -147,17 +147,19 @@ void act_as_server(tosend_t package) {
   printf("Enter your messages one by one and press return key!\n");
 
   //creating a new thread for receiving messages from the client
-  ret = pthread_create(&rThread, NULL, receiveMessage, (void *) (intptr_t)newsockfd);
+  ret = pthread_create(&rThread, NULL, receiveMessage, (void*)(intptr_t)sockfd);
   if (ret) {
     printf("ERROR: Return Code from pthread_create() is %d\n", ret);
     exit(1);
   }
+  //we aren't getting the package back. so we aren't making sure the changes in
+  //recieve message are saving
 
   buffer = (char*) malloc(sizeof(char)*BUFF_SIZE);
 
   while (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package.message, buffer);
-    ret = sendto(sockfd, &package, sizeof(package), 0, (struct sockaddr*) &cl_addr, sizeof(cl_addr));
+    ret = sendto(sockfd, (tosend_t*)&package, (1024+sizeof(package)), 0, (struct sockaddr*) &cl_addr, sizeof(cl_addr));
     if (ret < 0) {
       printf("Error sending data!\n");
     }
@@ -177,9 +179,6 @@ void initialize_package(tosend_t* package, int num_of_middle_servers, char* fina
   package->index = 0;
   package->num_of_middle_servers = num_of_middle_servers;
   strncpy(package->ip[num_of_middle_servers], final_ip, sizeof(char)*16);
-  // printf("%s\n",final_ip);
-  // printf("%d\n",num_of_middle_servers);
-  // printf("%s\n",package.ip[num_of_middle_servers]);
 }
 
 //Takes in a string package from the socket. If given to the end server, it
@@ -189,14 +188,13 @@ void initialize_package(tosend_t* package, int num_of_middle_servers, char* fina
 //   void
 void* receiveMessage(void* socket) {
   int ret;
-  tosend_t package;
-  
+  tosend_t *package=malloc(sizeof(tosend_t));
+
   for (;;) {
-    ret = recvfrom((int) (intptr_t)socket, &package, sizeof(package), 0, NULL, NULL);
-    if (ret < 0) printf("Error receiving the message!\n");
+    ret = recvfrom((int) (intptr_t)socket, package, sizeof(*package), 0, NULL, NULL);
     else {
-      if (package.index >= package.num_of_middle_servers) fputs(package.message, stdout);
-      else act_as_middle_server(package);
+      if (package->index >= package->num_of_middle_servers) fputs(package->message, stdout);
+      else act_as_middle_server(*package);
     }
   }
 }
@@ -210,16 +208,16 @@ int main(int argc, char**argv) {
   OpenSSL_add_all_algorithms();
 
   node_t* relay_data;
-  tosend_t package;
+  tosend_t* package = (tosend_t*) malloc(sizeof(tosend_t));
 
   if (argc > 2) {
     relay_data = read_file(); //initializes a linked list containing ip addresses and RSA keys
-    initialize_package(&package, atoi(argv[1]), (char*) argv[2]);
-    //struct_encryption(relay_data,package, do_bad_things(argv[2]));
-    act_as_client(package);
+    initialize_package(package, atoi(argv[1]), (char*) argv[2]);
+    struct_encryption(relay_data, *package, do_bad_things(argv[2]));
+    act_as_client(*package);
   } else {
-    initialize_package(&package, 0 , "");
-    act_as_server(package);
+    initialize_package(package, 0 , "");
+    act_as_server(*package);
   }
   return 0;
 }
