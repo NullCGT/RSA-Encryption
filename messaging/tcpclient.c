@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <openssl/err.h>
 #include <openssl/rsa.h>
+
 #include <openssl/pem.h>
 
 #include "socket_helper.h"
@@ -22,7 +23,7 @@
 
 
 typedef struct args {
-  void* socket;
+  int socket;
   struct sockaddr_in cl_addr;
 } args_t;
 
@@ -48,10 +49,10 @@ void act_as_client(tosend_t package) {
 
   server_keypair = do_bad_things(NULL);
   //struct_decryption(server_keypair, package, sizeof(server_keypair));
-  printf("%s\n",package.ip[package.index]);
+  printf("%d\n",package.ip[package.index]);
   serverAddr = (char*) malloc(sizeof(char)*16);
   strcpy(serverAddr, package.ip[package.index]);
-  printf("index after calling client: %s\n", package.index);
+  printf("index after calling client: %s\n", package.ip[package.index]);
 
   sockfd = create_socket();
   addr = connect_to_server(sockfd, serverAddr);
@@ -143,7 +144,8 @@ void act_as_server(tosend_t package) {
   char* buffer;
   pid_t childpid;
   pthread_t rThread;
-
+  args_t* ar;
+  
   sockfd = create_socket();
 
   bind_me(sockfd, NULL);
@@ -154,13 +156,12 @@ void act_as_server(tosend_t package) {
   newsockfd = accept_connection(sockfd, cl_addr);
   printf("Enter your messages one by one and press return key!\n");
 
-  args_t* ar;
   ar = (args_t*) malloc(sizeof(args_t));
-  ar->socket = (void*)(intptr_t)newsockfd;
+  ar->socket = newsockfd;
   ar->cl_addr = cl_addr;
     
   //creating a new thread for receiving messages from the client
-    ret = pthread_create(&rThread, NULL, receiveMessage, (void*)&ar);
+  ret = pthread_create(&rThread, NULL, receiveMessage, (void*)&ar);
   if (ret) {
     printf("ERROR: Return Code from pthread_create() is %d\n", ret);
     exit(1);
@@ -206,8 +207,7 @@ void* receiveMessage(void* args) {
   tosend_t *package=malloc(sizeof(tosend_t));
 
   for (;;) {
-    int ad_len = sizeof(((args_t*)args)->cl_addr);
-    ret = recvfrom((int) (intptr_t)((args_t*)args)->socket, package, sizeof(*package), 0, (struct sockaddr*) &((args_t*)args)->cl_addr, &ad_len);
+    ret = recvfrom(((args_t*)args)->socket, package, sizeof(*package), 0, &((args_t*)args)->cl_addr, sizeof(((args_t*)args)->cl_addr);
     printf("index: %d\n", package->index);
     printf("num: %d\n", package->num_of_middle_servers);
     printf("ip[0]: %s\n", package->ip[0]);
