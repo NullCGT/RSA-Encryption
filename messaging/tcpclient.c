@@ -47,7 +47,7 @@ void act_as_client(tosend_t package) {
   char* serverAddr;
 
   server_keypair = do_bad_things(NULL);
-  //struct_decryption(server_keypair, package, sizeof(server_keypair));
+  struct_decryption(server_keypair, package, sizeof(server_keypair));
   printf("%s\n",package.ip[package.index]);
   serverAddr = (char*) malloc(sizeof(char)*16);
   strcpy(serverAddr, package.ip[package.index]);
@@ -231,7 +231,7 @@ int main(int argc, char**argv) {
   if (argc > 2) {
     relay_data = read_file(); //initializes a linked list containing ip addresses and RSA keys
     initialize_package(package, atoi(argv[1]), (char*) argv[2]);
-    //struct_encryption(relay_data,package, do_bad_things(argv[2]));
+    struct_encryption(relay_data, *package, do_bad_things(argv[2]));
     act_as_client(*package);
   } else {
     initialize_package(package, 0 , "");
