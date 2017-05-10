@@ -176,7 +176,7 @@ void act_as_server(tosend_t package) {
 
 //Initialization of our package struct for cleanup
 //@returns void
-void initialize_package(tosend_t *package, int num_of_middle_servers, char* final_ip) {
+void initialize_package(tosend_t* package, int num_of_middle_servers, char* final_ip) {
   package->index = 0;
   package->num_of_middle_servers = num_of_middle_servers;
   strncpy(package->ip[num_of_middle_servers], final_ip, sizeof(char)*16);
@@ -214,16 +214,16 @@ int main(int argc, char**argv) {
   OpenSSL_add_all_algorithms();
 
   node_t* relay_data;
-  tosend_t package;
+  tosend_t* package = (tosend_t*) malloc(sizeof(tosend_t));
 
   if (argc > 2) {
     relay_data = read_file(); //initializes a linked list containing ip addresses and RSA keys
-    initialize_package(&package, atoi(argv[1]), (char*) argv[2]);
+    initialize_package(package, atoi(argv[1]), (char*) argv[2]);
     //struct_encryption(relay_data,package, do_bad_things(argv[2]));
-    act_as_client(package);
+    act_as_client(*package);
   } else {
-    initialize_package(&package, 0 , "");
-    act_as_server(package);
+    initialize_package(package, 0 , "");
+    act_as_server(*package);
   }
   return 0;
 }
