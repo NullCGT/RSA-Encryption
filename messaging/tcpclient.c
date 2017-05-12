@@ -64,9 +64,7 @@ void act_as_client(tosend_t* package) {
 
   while (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package->message, buffer);
-    printf("index after calling client: %s\n", package->ip[package->index]);
-    printf("index after calling client: %s\n", package->message);
-    ret = sendto(sockfd, package,(sizeof(package)+1024),0, (struct sockaddr*) &addr, sizeof(addr));
+    ret = sendto(sockfd, package,sizeof(tosend_t),0, (struct sockaddr*) &addr, sizeof(addr));
     if (ret < 0) {
       printf("Error sending data!\n");
     }
@@ -107,7 +105,7 @@ void act_as_middle_server(tosend_t *package) {
     printf("ERROR: Return Code from pthread_create() is %d\n", ret);
     exit(1);
   }
-    ret = sendto(sockfd, package, (sizeof(package)+1024), 0, (struct sockaddr*) &addr, sizeof(addr));
+    ret = sendto(sockfd, package, sizeof(tosend_t), 0, (struct sockaddr*) &addr, sizeof(addr));
     if (ret < 0) {
       printf("Error sending data!\n");
     }
@@ -154,9 +152,10 @@ void act_as_server(tosend_t* package) {
 
   while (fgets(buffer, BUFF_SIZE, stdin) != NULL) {
     strcpy(package->message, buffer);
-    ret = sendto(sockfd, package,(sizeof(package)+4096) , 0, (struct sockaddr*) &cl_addr, sizeof(cl_addr));
+    ret = sendto(sockfd, package,sizeof(tosend_t) , 0, (struct sockaddr*) &cl_addr, sizeof(cl_addr));
     if (ret < 0) {
       printf("Error sending data!\n");
+      exit(1);
     }
   }
 
@@ -186,16 +185,14 @@ void* receiveMessage(void* socket) {
   tosend_t *package=malloc(sizeof(tosend_t));
   
   for (;;) {
-
-    ret=recvfrom((int) (intptr_t)socket, package,(1024+sizeof(package)), 0, NULL, NULL);
+    ret=recvfrom((int) (intptr_t)socket, package,sizeof(tosend_t), 0, NULL, NULL);
     printf("index: %d\n", package->index);
     printf("num: %d\n", package->num_of_middle_servers);
     printf("ip[0]: %s\n", package->ip[0]);
     printf("message: %s\n", package->message);
     if (ret < 0){
       printf("Error receiving the message!\n");
-    }
-    else {
+    } else {
       if (package->index >= package->num_of_middle_servers) fputs(package->message, stdout);
       else act_as_middle_server(package);
     }
