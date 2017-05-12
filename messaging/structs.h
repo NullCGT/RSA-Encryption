@@ -3,7 +3,7 @@
 #pragma once
 
 #define PORT 4444
-#define KEYBITS 4096
+#define KEYBITS 2048
 #define BUFF_SIZE KEYBITS / 8
 #define ARBITRARY_MAX_RELAYS 100
 #define MSG_SIZE 1000

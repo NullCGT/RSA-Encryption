@@ -42,10 +42,10 @@ void act_as_client(tosend_t* package) {
   pthread_t rThread;
   RSA* server_keypair;
   char* serverAddr;
-  
+
   server_keypair = do_bad_things(NULL);
 
-  struct_decryption(server_keypair, package, sizeof(server_keypair));
+  //struct_decryption(server_keypair, package, sizeof(server_keypair));
   printf("%d\n",package->ip[package->index]);
   serverAddr = (char*) malloc(sizeof(char)*16);
   strcpy(serverAddr, package->ip[package->index]);
@@ -67,7 +67,7 @@ void act_as_client(tosend_t* package) {
     strcpy(package->message, buffer);
     printf("index after calling client: %s\n", package->ip[package->index]);
     printf("index after calling client: %s\n", package->message);
-    ret = sendto(sockfd, package,(sizeof(package)+4096),0, (struct sockaddr*) &addr, sizeof(addr));
+    ret = sendto(sockfd, package,(sizeof(package)+1024),0, (struct sockaddr*) &addr, sizeof(addr));
     if (ret < 0) {
       printf("Error sending data!\n");
     }
@@ -94,7 +94,7 @@ void act_as_middle_server(tosend_t *package) {
   RSA* server_keypair;
 
   server_keypair = do_bad_things(NULL);
-  struct_decryption(server_keypair, package, sizeof(server_keypair));
+  //struct_decryption(server_keypair, package, sizeof(server_keypair));
 
   serverAddr = (char*) malloc(sizeof(char)*16);
   strcpy(serverAddr, package->ip[package->index]);
@@ -112,7 +112,7 @@ void act_as_middle_server(tosend_t *package) {
     if (ret < 0) {
       printf("Error sending data!\n");
     }
-  
+
   close(sockfd);
   pthread_exit(NULL);
   act_as_server(package);
@@ -133,7 +133,7 @@ void act_as_server(tosend_t* package) {
   char* buffer;
   pid_t childpid;
   pthread_t rThread;
-  
+
   sockfd = create_socket();
 
   bind_me(sockfd, NULL);
@@ -184,8 +184,8 @@ void initialize_package(tosend_t* package, int num_of_middle_servers, char* fina
 //   void
 void* receiveMessage(void* socket) {
   int ret;
-  tosend_t *package;
-  
+  tosend_t *package=(tosend_t *)malloc(sizeof(tosend_t));
+
   for (;;) {
 
     ret=recvfrom((int) (intptr_t)socket, package,(4096+sizeof(package)), 0, NULL, NULL);
@@ -209,6 +209,7 @@ void* receiveMessage(void* socket) {
 //client: ./tcpclient ip num_of_middle_servers
 int main(int argc, char**argv) {
 
+
   OpenSSL_add_all_algorithms();
 
   node_t* relay_data;
@@ -219,10 +220,10 @@ int main(int argc, char**argv) {
 
     initialize_package(package, atoi(argv[1]), (char*) argv[2]);
     struct_encryption(relay_data, package, do_bad_things(argv[2]));
-    act_as_client(package);
+    //act_as_client(package);
   } else {
-    initialize_package(package, 0 , "");
-    act_as_server(package);
+    //initialize_package(package, 0 , "");
+    //act_as_server(package);
   }
   return 0;
 }
