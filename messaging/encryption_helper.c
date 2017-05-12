@@ -8,6 +8,7 @@
 
 #include "structs.h"
 
+//An RSA generator created on bad practice
 RSA* do_bad_things(char* ip_address) {
   //srand(atoi(ip_address));
   srand(1);
@@ -15,6 +16,9 @@ RSA* do_bad_things(char* ip_address) {
   return keypair;
 }
 
+//Enrypts our message using our RSA token
+//@returns
+//   char*
 char *encryption(RSA* keypair_pub, char* message){
   char *encrypted_message = malloc(RSA_size(keypair_pub));
   int encrypt_len;
@@ -35,7 +39,13 @@ char *encryption(RSA* keypair_pub, char* message){
   return encrypted_message;
 }
 
+
+//Handles the encription of our package. Encrypts the IP adddresses in multiple
+//layers
+//@returns
+//   tosend_t*
 tosend_t struct_encryption(node_t* relay_data, tosend_t package, RSA* pub_for_final) {
+  // For now this will all be using the same keypair, because we don't have a layout for multiple keys yet.
   int counter = 0;
   strncpy(package.ip[package.num_of_middle_servers],
           encryption(pub_for_final,package.ip[package.num_of_middle_servers]), BUFF_SIZE);
@@ -52,11 +62,15 @@ tosend_t struct_encryption(node_t* relay_data, tosend_t package, RSA* pub_for_fi
   return package;
 }
 
+
+//Handles the decryption of our package. Decrypts one entire layer of IP addresses.
+//@returns
+//   tosend_t*
 tosend_t struct_decryption(RSA* keypair, tosend_t package, int encrypt_len){
   char *decrypted_message = malloc(RSA_size(keypair));
   char *err = malloc(130);
   
-  for (int i = package.index; i < package.num_of_middle_servers; i++) {
+  for (int i = package.index; i <= package.num_of_middle_servers; i++) {
     if(RSA_private_decrypt(encrypt_len,
                             (unsigned char*)package.ip[i],
                             (unsigned char*)package.ip[i],
@@ -71,6 +85,9 @@ tosend_t struct_decryption(RSA* keypair, tosend_t package, int encrypt_len){
   return package;
 }
 
+//Reads a list of IP addresses from file
+//@returns
+//   node_t*
 node_t* read_file(){
   FILE *ptr_file;
   char buf[20];

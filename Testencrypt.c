@@ -32,35 +32,46 @@ int main (void)
 
   OpenSSL_add_all_algorithms();
   system("clear");
-  
-  printf("Demonstration, refraining from using horribly broken file loader code. Generating new keypair...\n");
-  keypair = RSA_generate_key(KEYBITS, 3, NULL, NULL);
-  private = BIO_new(BIO_s_mem());
-  public = BIO_new(BIO_s_mem());
+  // http://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
+  if (access(PUBFILENAME, F_OK) != -1 && access(PRIVFILENAME, F_OK) != -1) {
+    printf("Found keypair file!\n");
+    
+    file = fopen(PUBFILENAME, "w");
+    PEM_read_RSA_PUBKEY(file,pubkey,NULL,NULL);
+    fclose(file);
+    file = fopen(PRIVFILENAME,"w");
+    PEM_read_RSAPrivateKey(file,privkey,NULL,NULL);
+    fclose(file);
+    
+  } else {
+    printf("Did not find keypair file. Generating new keypair...\n");
+    keypair = RSA_generate_key(KEYBITS, 3, NULL, NULL);
+    private = BIO_new(BIO_s_mem());
+    public = BIO_new(BIO_s_mem());
 
-  PEM_write_bio_RSAPrivateKey(private, keypair, NULL, NULL, 0, NULL, NULL);
-  PEM_write_bio_RSAPublicKey(public, keypair);
+    PEM_write_bio_RSAPrivateKey(private, keypair, NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_RSAPublicKey(public, keypair);
 
-  size_t pri_len = BIO_pending(private);
-  size_t pub_len = BIO_pending(public);
+    size_t pri_len = BIO_pending(private);
+    size_t pub_len = BIO_pending(public);
 
-  pri_key = malloc(pri_len + 1);
-  pub_key = malloc(pub_len + 1);
+    pri_key = malloc(pri_len + 1);
+    pub_key = malloc(pub_len + 1);
 
-  BIO_read(private, pri_key, pri_len);
-  BIO_read(public, pub_key, pub_len);
+    BIO_read(private, pri_key, pri_len);
+    BIO_read(public, pub_key, pub_len);
 
-  pri_key[pri_len] = '\0';
-  pub_key[pub_len] = '\0';
+    pri_key[pri_len] = '\0';
+    pub_key[pub_len] = '\0';
     
 
-  file = fopen(PUBFILENAME, "w");
-  PEM_write_RSA_PUBKEY(file, keypair);
-  fclose(file);
-  file = fopen(PRIVFILENAME,"w");
-  PEM_write_RSAPrivateKey(file,keypair,NULL,NULL,0,NULL,NULL);
-  fclose(file);
-  
+    file = fopen(PUBFILENAME, "w");
+    PEM_write_RSA_PUBKEY(file, keypair);
+    fclose(file);
+    file = fopen(PRIVFILENAME,"w");
+    PEM_write_RSAPrivateKey(file,keypair,NULL,NULL,0,NULL,NULL);
+    fclose(file);
+  }
 
   // Welcome messages
   printf("Welcome to the secure messanger client.\n");
@@ -84,11 +95,10 @@ int main (void)
       printf("\nCommands:"
              "\n:logout     Quits the program.\n"
              ":help       Displays command list.\n"
-             ":keys       Prints your public key to the console.\n\n");
+             ":public     Prints your public key to the console.\n\n");
     }
-    else if (strcmp(message, ":keys") == 0) {
+    else if (strcmp(message, ":public") == 0) {
         printf("\n%s\n\n", pub_key);
-        printf("\n%s\n\n", pri_key);
     }
     else {
 
@@ -102,10 +112,10 @@ int main (void)
         ERR_error_string(ERR_get_error(), err);
         fprintf(stderr,RED "Error encrypting message: %s\n" RESET, err);
       } else {
-        printf(CYAN "Input Message:   %s\n" RESET, message);
+        printf(CYAN "%s\n" RESET, message);
       }
 
-      printf(RED "Encrypted Message:   %s\n" RESET, encrypted_message);
+
   
       char *decrypted_message = malloc(RSA_size(keypair));
       if(RSA_private_decrypt(encrypt_len, (unsigned char*)encrypted_message, (unsigned char*)decrypted_message,
@@ -114,8 +124,7 @@ int main (void)
         ERR_error_string(ERR_get_error(),err);
         fprintf(stderr,RED "Error decrypting message: %s\n" RESET, err);
       } else {
-        printf(GREEN "Decrypted message:   %s\n" RESET, decrypted_message);
-        printf("Input another message:\n");
+        printf(GREEN "Decrypted message: %s\n" RESET, decrypted_message);
       }
     }
 
