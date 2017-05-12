@@ -108,7 +108,7 @@ void act_as_middle_server(tosend_t *package) {
     printf("ERROR: Return Code from pthread_create() is %d\n", ret);
     exit(1);
   }
-    ret = sendto(sockfd, package, (sizeof(package)+4096), 0, (struct sockaddr*) &addr, sizeof(addr));
+    ret = sendto(sockfd, package, (sizeof(package)+1024), 0, (struct sockaddr*) &addr, sizeof(addr));
     if (ret < 0) {
       printf("Error sending data!\n");
     }
@@ -188,7 +188,7 @@ void* receiveMessage(void* socket) {
 
   for (;;) {
 
-    ret=recvfrom((int) (intptr_t)socket, package,(4096+sizeof(package)), 0, NULL, NULL);
+    ret=recvfrom((int) (intptr_t)socket, package,(1024+sizeof(package)), 0, NULL, NULL);
     printf("index: %d\n", package->index);
     printf("num: %d\n", package->num_of_middle_servers);
     printf("ip[0]: %s\n", package->ip[0]);
@@ -219,8 +219,8 @@ int main(int argc, char**argv) {
     relay_data = read_file(); //initializes a linked list containing ip addresses and RSA keys
 
     initialize_package(package, atoi(argv[1]), (char*) argv[2]);
-    struct_encryption(relay_data, package, do_bad_things(argv[2]));
-    //act_as_client(package);
+    // struct_encryption(relay_data, package, do_bad_things(argv[2]));
+    act_as_client(package);
   } else {
     //initialize_package(package, 0 , "");
     //act_as_server(package);

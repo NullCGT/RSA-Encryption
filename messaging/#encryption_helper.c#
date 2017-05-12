@@ -44,11 +44,11 @@ tosend_t* struct_encryption(node_t* relay_data, tosend_t *package, RSA* pub_for_
 
   int counter = 0;
   RSA* pub[package->num_of_middle_servers];
-  while ((relay_data != NULL)&& (counter < package->num_of_middle_servers)){
+   while ((relay_data != NULL)&& (counter<package->num_of_middle_servers)){
     memcpy(pub[counter],relay_data->keypair_pub,sizeof(RSA));
     counter++;
     relay_data=relay_data->next;
-  }
+    }
   for(int i = counter; i > 0;i--){
   for (int j = counter-1; j>=0; j--) {
       strcpy(package->ip[i], encryption(pub[j], package->ip[i]));
