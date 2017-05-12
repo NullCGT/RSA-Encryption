@@ -40,40 +40,32 @@ char *encryption(RSA* keypair_pub, char* message){
 }
 
 
-//Handles the encription of our package. Encrypts the IP adddresses in multiple
-//layers
-//@returns
-//   tosend_t*
-tosend_t struct_encryption(node_t* relay_data, tosend_t package, RSA* pub_for_final) {
-  // For now this will all be using the same keypair, because we don't have a layout for multiple keys yet.
+tosend_t* struct_encryption(node_t* relay_data, tosend_t *package, RSA* pub_for_final) {
+
   int counter = 0;
-  strncpy(package.ip[package.num_of_middle_servers],
-          encryption(pub_for_final,package.ip[package.num_of_middle_servers]), BUFF_SIZE);
-
-  while (relay_data != NULL) {
-    strcpy(package.ip[counter], relay_data->ip_address);
-
-    for (int i = 0; i <= counter; i++) {
-      strcpy(package.ip[i], encryption(relay_data->keypair_pub, package.ip[i]));
+  RSA* pub[package->num_of_middle_servers];
+  while ((relay_data != NULL)&& (counter<package->num_of_middle_servers)){
+    memcpy(pub[counter],relay_data->keypair_pub,sizeof(RSA));
+    counter++;
+    relay_data=relay_data->next;
+  }
+  for(int i = counter; i > 0;i--){
+  for (int j = counter-1; j>=0; j--) {
+      strcpy(package->ip[i], encryption(pub[j], package->ip[i]));
     }
-    relay_data = relay_data->next;
-    counter++; 
   }
   return package;
 }
 
-
-//Handles the decryption of our package. Decrypts one entire layer of IP addresses.
-//@returns
-//   tosend_t*
-tosend_t struct_decryption(RSA* keypair, tosend_t package, int encrypt_len){
+tosend_t* struct_decryption(RSA* keypair, tosend_t *package, int encrypt_len){
   char *decrypted_message = malloc(RSA_size(keypair));
   char *err = malloc(130);
-  
-  for (int i = package.index; i <= package.num_of_middle_servers; i++) {
+    
+  package->index++;
+  for (int i = package->index; i <=package->num_of_middle_servers; i++) {
     if(RSA_private_decrypt(encrypt_len,
-                            (unsigned char*)package.ip[i],
-                            (unsigned char*)package.ip[i],
+                            (unsigned char*)package->ip[i],
+                            (unsigned char*)package->ip[i],
                             keypair, RSA_PKCS1_OAEP_PADDING) == -1) {
       ERR_load_crypto_strings();
       ERR_error_string(ERR_get_error(),err);
@@ -81,7 +73,6 @@ tosend_t struct_decryption(RSA* keypair, tosend_t package, int encrypt_len){
     }
   }
   
-  package.index++;
   return package;
 }
 
