@@ -34,33 +34,31 @@ char *encryption(RSA* keypair_pub, char* message){
   } /* else {
      printf("%s\n" , message);
   }
-  // for debugging 
+  // for debugging
     */
   return encrypted_message;
 }
 
 
 tosend_t* struct_encryption(node_t* relay_data, tosend_t *package, RSA* pub_for_final) {
-
-  int counter = 0;
+  clock_t begin = clock();
+  int counter = package->num_of_middle_servers;
   RSA* pub[package->num_of_middle_servers];
-  while ((relay_data != NULL)&& (counter<package->num_of_middle_servers)){
-    memcpy(pub[counter],relay_data->keypair_pub,sizeof(RSA));
-    counter++;
-    relay_data=relay_data->next;
-  }
   for(int i = counter; i > 0;i--){
   for (int j = counter-1; j>=0; j--) {
-      strcpy(package->ip[i], encryption(pub[j], package->ip[i]));
+      strcpy(package->ip[i], encryption(do_bad_things(package->ip[j]), package->ip[i]));
     }
   }
+  clock_t end = clock();
+  double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+  printf("encryption time: %f\n", time_spent);
   return package;
 }
 
 tosend_t* struct_decryption(RSA* keypair, tosend_t *package, int encrypt_len){
   char *decrypted_message = malloc(RSA_size(keypair));
   char *err = malloc(130);
-    
+
   package->index++;
   for (int i = package->index; i <=package->num_of_middle_servers; i++) {
     if(RSA_private_decrypt(encrypt_len,
@@ -72,7 +70,7 @@ tosend_t* struct_decryption(RSA* keypair, tosend_t *package, int encrypt_len){
       fprintf(stderr,"Error decrypting message: %s\n", err);
     }
   }
-  
+
   return package;
 }
 
